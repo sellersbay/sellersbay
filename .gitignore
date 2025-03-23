@@ -1,0 +1,43 @@
+# ===============================
+# 📦 WordPress Specific Files
+# ===============================
+wp-content/uploads/
+wp-content/upgrade/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/upgrade-temp-backup/
+
+# Configuration files with sensitive information
+# Uncomment below if you want to exclude wp-config.php
+# wp-config.php
+
+# Misc WordPress files
+sitemap.xml
+sitemap.xml.gz
+
+# ===============================
+# 🧰 Symfony Specific Files
+# ===============================
+ecommerce-tools/vendor/
+ecommerce-tools/var/
+ecommerce-tools/.env.local
+ecommerce-tools/.env.test
+ecommerce-tools/.DS_Store
+
+# ===============================
+# ⚙️ System + IDE files
+# ===============================
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# ===============================
+# ❌ Exclude XAMPP junk folders
+# ===============================
+xampp/
+dashboard/
+webalizer/
