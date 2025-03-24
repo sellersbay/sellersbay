@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dashboard Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="email"], 
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .links {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 15px;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Dashboard Login</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Email:</label>
+                <input type="email" id="username" name="_username" value="sellersbay@gmail.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="_password" value="powder04" required>
+            </div>
+            
+            <div class="form-group">
+                <button type="button" id="loginButton">Login via JavaScript</button>
+            </div>
+        </form>
+        
+        <div class="links">
+            <a href="http://127.0.0.1:8000/login" target="_blank">Go to Login Page</a>
+            <a href="http://127.0.0.1:8000/dashboard" target="_blank">Go to Dashboard</a>
+        </div>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <p>There are three ways to test the dashboard:</p>
+            <ol>
+                <li>
+                    <strong>Direct manual login:</strong> Click the "Go to Login Page" link above, then enter:
+                    <ul>
+                        <li><strong>Email:</strong> sellersbay@gmail.com</li>
+                        <li><strong>Password:</strong> powder04</li>
+                    </ul>
+                    And click Sign In.
+                </li>
+                <li>
+                    <strong>After logging in:</strong> Click the "Go to Dashboard" link to navigate directly to the dashboard page.
+                </li>
+            </ol>
+            <p>After successfully logging in, you should see the dashboard with proper product counts and recent activity.</p>
+        </div>
+    </div>
+</body>
+</html>

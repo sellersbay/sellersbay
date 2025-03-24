@@ -1,0 +1,1111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}System Statistics - Admin - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .admin-nav .nav-link {
+            color: #4e73df;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .admin-nav .nav-link:hover {
+            background-color: #eaecf4;
+        }
+        
+        .admin-nav .nav-link.active {
+            background-color: #4e73df;
+            color: white;
+        }
+        
+        .admin-nav .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        .stats-card {
+            border-left: 4px solid #4e73df;
+            transition: transform 0.2s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card.users { border-left-color: #4e73df; }
+        .stats-card.revenue { border-left-color: #1cc88a; }
+        .stats-card.products { border-left-color: #e74a3b; }
+        .stats-card.content { border-left-color: #36b9cc; }
+        
+        .chart-card {
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
+        }
+        
+        .chart-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-circle {
+            height: 2.5rem;
+            width: 2.5rem;
+            border-radius: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stat-circle.bg-users { background-color: rgba(78, 115, 223, 0.2); }
+        .stat-circle.bg-revenue { background-color: rgba(28, 200, 138, 0.2); }
+        .stat-circle.bg-products { background-color: rgba(231, 74, 59, 0.2); }
+        .stat-circle.bg-content { background-color: rgba(54, 185, 204, 0.2); }
+        
+        .stat-circle i {
+            color: #4e73df;
+        }
+        
+        .stat-circle.bg-users i { color: #4e73df; }
+        .stat-circle.bg-revenue i { color: #1cc88a; }
+        .stat-circle.bg-products i { color: #e74a3b; }
+        .stat-circle.bg-content i { color: #36b9cc; }
+        
+        .date-range-selector {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+        
+        .date-range-selector .btn {
+            margin-left: 0.5rem;
+        }
+        
+        .dashboard-analytics-subtitle {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+        
+        .key-metric {
+            padding: 1rem;
+            border-radius: 0.35rem;
+            background-color: #f8f9fc;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .key-metric-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+        
+        .key-metric-info h5 {
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            color: #5a5c69;
+        }
+        
+        .key-metric-info .h2 {
+            margin-bottom: 0;
+            font-weight: 700;
+        }
+        
+        .key-metric-info .trend {
+            font-size: 0.8rem;
+        }
+        
+        .key-metric-info .trend-up { color: #1cc88a; }
+        .key-metric-info .trend-down { color: #e74a3b; }
+        
+        .top-metrics-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -0.5rem;
+        }
+        
+        .metric-pill {
+            background-color: #f8f9fc;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            margin: 0.5rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .metric-pill i {
+            margin-right: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .metric-pill .number {
+            font-weight: 700;
+            margin-left: 0.5rem;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0 text-gray-800">System Statistics</h1>
+            <p class="text-muted">Comprehensive analytics and performance metrics for RoboSEO.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Admin Navigation Sidebar -->
+        <div class="col-xl-3 col-lg-4 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Admin Navigation</h6>
+                </div>
+                <div class="card-body">
+                    <div class="admin-nav">
+                        <a href="{{ path('app_admin_dashboard') }}" class="nav-link">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        <a href="{{ path('app_admin_users') }}" class="nav-link">
+                            <i class="fas fa-users"></i> User Management
+                        </a>
+                        <a href="{{ path('app_admin_products') }}" class="nav-link">
+                            <i class="fas fa-box"></i> Product Management
+                        </a>
+                        <a href="{{ path('app_admin_credits') }}" class="nav-link">
+                            <i class="fas fa-coins"></i> Credits Management
+                        </a>
+                        <a href="{{ path('app_admin_subscriptions') }}" class="nav-link">
+                            <i class="fas fa-receipt"></i> Subscription Plans
+                        </a>
+                        <a href="{{ path('app_admin_statistics') }}" class="nav-link active">
+                            <i class="fas fa-chart-bar"></i> System Statistics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exportReportModal">
+                            <i class="fas fa-file-export"></i> Export Full Report
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleReportModal">
+                            <i class="fas fa-calendar"></i> Schedule Reports
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#customizeMetricsModal">
+                            <i class="fas fa-sliders-h"></i> Customize Metrics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="col-xl-9 col-lg-8">
+            <!-- Date Range Selector -->
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0">Data Timeframe</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="date-range-selector">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary active">7 Days</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary">30 Days</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary">90 Days</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary">All Time</button>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#customDateRangeModal">
+                                    <i class="fas fa-calendar"></i> Custom
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Cards Row -->
+            <div class="row mb-4">
+                <!-- Users Card -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card users">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>12% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Card -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card revenue">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Revenue</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">${{ charts.revenue[charts.revenue|length - 1].amount|number_format(2, '.', ',') }}</div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>8.3% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Card -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card products">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Products</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_products|number_format }}</div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>23.5% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-box fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Content Card -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card content">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">AI Content Generated</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.ai_processed_products|number_format }}</div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>17.8% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-robot fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Growth & Metrics Charts -->
+            <div class="row">
+                <!-- User Growth Chart -->
+                <div class="col-xl-8 col-lg-7">
+                    <div class="card shadow mb-4 chart-card">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-primary">User Growth & Engagement</h6>
+                            <div class="dropdown no-arrow">
+                                <a class="dropdown-toggle" href="#" role="button" id="userGrowthDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userGrowthDropdown">
+                                    <a class="dropdown-item" href="#">View Details</a>
+                                    <a class="dropdown-item" href="#">Export Data</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#">Settings</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="dashboard-analytics-subtitle">
+                                <span class="fw-bold">{{ stats.total_users }} total users</span> - growing steadily at 12% monthly
+                            </div>
+                            <div class="chart-container" style="height: 320px;">
+                                <canvas id="userGrowthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User Type Distribution -->
+                <div class="col-xl-4 col-lg-5">
+                    <div class="card shadow mb-4 chart-card">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-primary">User Type Distribution</h6>
+                            <div class="dropdown no-arrow">
+                                <a class="dropdown-toggle" href="#" role="button" id="userDistributionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDistributionDropdown">
+                                    <a class="dropdown-item" href="#">View Details</a>
+                                    <a class="dropdown-item" href="#">Export Data</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#">Settings</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="dashboard-analytics-subtitle">
+                                <span class="fw-bold">Premium conversion rate: 27%</span> - up from 22% last quarter
+                            </div>
+                            <div class="chart-container" style="height: 320px;">
+                                <canvas id="userDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Revenue Analysis -->
+            <div class="card shadow mb-4 chart-card">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Revenue Analysis</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="revenueDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="revenueDropdown">
+                            <a class="dropdown-item" href="#">View Details</a>
+                            <a class="dropdown-item" href="#">Export Data</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#">Settings</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="dashboard-analytics-subtitle">
+                                <span class="fw-bold">${{ charts.revenue[charts.revenue|length - 1].amount|number_format(2, '.', ',') }} total revenue</span> - consistent 8.3% month-over-month growth
+                            </div>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <h6 class="font-weight-bold text-uppercase small mb-3">Revenue Breakdown</h6>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="revenueBreakdownChart"></canvas>
+                            </div>
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">One-time Credit Purchases</span>
+                                    <span class="badge bg-primary">{{ charts.revenue_breakdown[0] }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">Premium Subscriptions</span>
+                                    <span class="badge bg-success">{{ charts.revenue_breakdown[1] }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="small">Other Revenue</span>
+                                    <span class="badge bg-info">{{ charts.revenue_breakdown[2] }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity & Performance -->
+            <div class="row">
+                <!-- Content Generation Metrics -->
+                <div class="col-lg-6">
+                    <div class="card shadow mb-4 chart-card">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Content Generation Metrics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="dashboard-analytics-subtitle">
+                                <span class="fw-bold">12,547 total content pieces</span> generated for 3,782 unique products
+                            </div>
+                            <div class="mb-4">
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-primary">
+                                        <i class="fas fa-pen text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>Product Descriptions</h5>
+                                        <div class="h2">4,218</div>
+                                        <div class="trend trend-up">
+                                            <i class="fas fa-arrow-up me-1"></i> 12% increase
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-info">
+                                        <i class="fas fa-tags text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>Meta Descriptions</h5>
+                                        <div class="h2">3,865</div>
+                                        <div class="trend trend-up">
+                                            <i class="fas fa-arrow-up me-1"></i> 15% increase
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-success">
+                                        <i class="fas fa-image text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>Image Alt Text</h5>
+                                        <div class="h2">2,937</div>
+                                        <div class="trend trend-up">
+                                            <i class="fas fa-arrow-up me-1"></i> 9% increase
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-warning">
+                                        <i class="fas fa-hashtag text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>SEO Keywords</h5>
+                                        <div class="h2">1,527</div>
+                                        <div class="trend trend-up">
+                                            <i class="fas fa-arrow-up me-1"></i> 24% increase
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- System Performance -->
+                <div class="col-lg-6">
+                    <div class="card shadow mb-4 chart-card">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">System Performance</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="dashboard-analytics-subtitle">
+                                <span class="fw-bold">99.8% uptime</span> with average response time of 285ms
+                            </div>
+                            <div class="mb-4">
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-success">
+                                        <i class="fas fa-server text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>API Response Time</h5>
+                                        <div class="h2">285ms</div>
+                                        <div class="trend trend-down">
+                                            <i class="fas fa-arrow-down me-1"></i> 45ms improvement
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-info">
+                                        <i class="fas fa-tachometer-alt text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>Page Load Time</h5>
+                                        <div class="h2">1.2s</div>
+                                        <div class="trend trend-down">
+                                            <i class="fas fa-arrow-down me-1"></i> 0.3s improvement
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-warning">
+                                        <i class="fas fa-exclamation-triangle text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>Error Rate</h5>
+                                        <div class="h2">0.05%</div>
+                                        <div class="trend trend-down">
+                                            <i class="fas fa-arrow-down me-1"></i> 0.02% improvement
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="key-metric">
+                                    <div class="key-metric-icon bg-danger">
+                                        <i class="fas fa-memory text-white"></i>
+                                    </div>
+                                    <div class="key-metric-info">
+                                        <h5>System Resource Usage</h5>
+                                        <div class="h2">42%</div>
+                                        <div class="trend trend-down">
+                                            <i class="fas fa-arrow-down me-1"></i> 3% decrease
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Entities & Events -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Stats & Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h6 class="small font-weight-bold text-uppercase mb-3">Top Metrics</h6>
+                            <div class="top-metrics-container">
+                                <div class="metric-pill">
+                                    <i class="fas fa-user text-primary"></i> Most Active User:
+                                    <span class="number">John Doe</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-shopping-cart text-success"></i> Best Selling Package:
+                                    <span class="number">Medium (50 Credits)</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-globe text-info"></i> Top Traffic Source:
+                                    <span class="number">Google</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-mobile-alt text-warning"></i> Mobile Users:
+                                    <span class="number">42%</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-desktop text-danger"></i> Desktop Users:
+                                    <span class="number">58%</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-redo text-secondary"></i> Retention Rate:
+                                    <span class="number">76%</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-store text-primary"></i> Top Store Platform:
+                                    <span class="number">WooCommerce</span>
+                                </div>
+                                <div class="metric-pill">
+                                    <i class="fas fa-clock text-success"></i> Avg. Session:
+                                    <span class="number">12m 48s</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <h6 class="small font-weight-bold text-uppercase mb-3">Recent System Events</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Event</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2023-12-16 14:32</td>
+                                            <td>API Rate Limit Adjustment</td>
+                                            <td><span class="badge bg-success">Success</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-16 10:15</td>
+                                            <td>Scheduled Backup</td>
+                                            <td><span class="badge bg-success">Success</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-15 16:47</td>
+                                            <td>System Update v2.3.1</td>
+                                            <td><span class="badge bg-success">Success</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-15 08:02</td>
+                                            <td>AI Model Update</td>
+                                            <td><span class="badge bg-success">Success</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-14 22:10</td>
+                                            <td>Temporary API Slowdown</td>
+                                            <td><span class="badge bg-warning">Resolved</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Export Report Modal -->
+<div class="modal fade" id="exportReportModal" tabindex="-1" aria-labelledby="exportReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportReportModalLabel">Export Analytics Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportReportForm" action="{{ path('app_admin_export_report') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('export_report') }}">
+                    <div class="mb-3">
+                        <label for="reportFormat" class="form-label">Report Format</label>
+                        <select class="form-select" id="reportFormat">
+                            <option value="pdf">PDF Document</option>
+                            <option value="excel">Excel Spreadsheet</option>
+                            <option value="csv">CSV File</option>
+                            <option value="json">JSON Data</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reportTimeframe" class="form-label">Timeframe</label>
+                        <select class="form-select" id="reportTimeframe">
+                            <option value="7days">Last 7 Days</option>
+                            <option value="30days" selected>Last 30 Days</option>
+                            <option value="90days">Last 90 Days</option>
+                            <option value="year">Last Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Include Sections</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeUsers" checked>
+                            <label class="form-check-label" for="includeUsers">User Statistics</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeRevenue" checked>
+                            <label class="form-check-label" for="includeRevenue">Revenue Data</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeProducts" checked>
+                            <label class="form-check-label" for="includeProducts">Product Analytics</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeContent" checked>
+                            <label class="form-check-label" for="includeContent">Content Generation Metrics</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeSystem" checked>
+                            <label class="form-check-label" for="includeSystem">System Performance</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="generateReportBtn" onclick="document.getElementById('exportReportForm').submit()">Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Report Modal -->
+<div class="modal fade" id="scheduleReportModal" tabindex="-1" aria-labelledby="scheduleReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleReportModalLabel">Schedule Automated Reports</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleReportForm" action="{{ path('app_admin_schedule_report') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('schedule_report') }}">
+                    <div class="mb-3">
+                        <label for="scheduleName" class="form-label">Report Name</label>
+                        <input type="text" class="form-control" id="scheduleName" placeholder="e.g., Monthly Performance Report">
+                    </div>
+                    <div class="mb-3">
+                        <label for="scheduleEmail" class="form-label">Email Recipients</label>
+                        <input type="text" class="form-control" id="scheduleEmail" placeholder="email@example.com, email2@example.com">
+                        <small class="form-text text-muted">Separate multiple emails with commas</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="scheduleFrequency" class="form-label">Frequency</label>
+                        <select class="form-select" id="scheduleFrequency">
+                            <option value="daily">Daily</option>
+                            <option value="weekly" selected>Weekly</option>
+                            <option value="biweekly">Bi-weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="scheduleDay" class="form-label">Day of Week/Month</label>
+                        <select class="form-select" id="scheduleDay">
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                            <option value="7">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="scheduleFormat" class="form-label">Report Format</label>
+                        <select class="form-select" id="scheduleFormat">
+                            <option value="pdf" selected>PDF Document</option>
+                            <option value="excel">Excel Spreadsheet</option>
+                            <option value="csv">CSV File</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Include Sections</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scheduleUsers" checked>
+                            <label class="form-check-label" for="scheduleUsers">User Statistics</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scheduleRevenue" checked>
+                            <label class="form-check-label" for="scheduleRevenue">Revenue Data</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scheduleProducts" checked>
+                            <label class="form-check-label" for="scheduleProducts">Product Analytics</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="scheduleContent" checked>
+                            <label class="form-check-label" for="scheduleContent">Content Generation Metrics</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveScheduleBtn" onclick="document.getElementById('scheduleReportForm').submit()">Schedule Reports</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Date Range Modal -->
+<div class="modal fade" id="customDateRangeModal" tabindex="-1" aria-labelledby="customDateRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customDateRangeModalLabel">Custom Date Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customDateForm" action="{{ path('app_admin_set_custom_date_range') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('custom_date_range') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="compareWith" class="form-label">Compare With</label>
+                        <select class="form-select" id="compareWith">
+                            <option value="none">No comparison</option>
+                            <option value="previous">Previous period</option>
+                            <option value="year">Same period last year</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="applyDateRangeBtn" onclick="document.getElementById('customDateForm').submit()">Apply Range</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customize Metrics Modal -->
+<div class="modal fade" id="customizeMetricsModal" tabindex="-1" aria-labelledby="customizeMetricsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customizeMetricsModalLabel">Customize Dashboard Metrics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customizeMetricsForm" action="{{ path('app_admin_update_metrics_settings') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('update_metrics_settings') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Displayed Metrics</label>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metricUsers" checked>
+                                    <label class="form-check-label" for="metricUsers">
+                                        User Growth & Distribution
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metricRevenue" checked>
+                                    <label class="form-check-label" for="metricRevenue">
+                                        Revenue Analysis
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metricContent" checked>
+                                    <label class="form-check-label" for="metricContent">
+                                        Content Generation Metrics
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metricSystem" checked>
+                                    <label class="form-check-label" for="metricSystem">
+                                        System Performance
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metricTopStats" checked>
+                                    <label class="form-check-label" for="metricTopStats">
+                                        Top Stats & Recent Activity
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="metricRefreshInterval" class="form-label">Refresh Interval</label>
+                        <select class="form-select" id="metricRefreshInterval">
+                            <option value="0">Never (manual refresh)</option>
+                            <option value="300">Every 5 minutes</option>
+                            <option value="900">Every 15 minutes</option>
+                            <option value="1800">Every 30 minutes</option>
+                            <option value="3600">Every hour</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveMetricsSettingsBtn" onclick="document.getElementById('customizeMetricsForm').submit()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User Growth Chart
+    const ctxUserGrowth = document.getElementById('userGrowthChart').getContext('2d');
+    const userGrowthChart = new Chart(ctxUserGrowth, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Total Users',
+                data: {{ charts.user_growth|json_encode|raw }},
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: 'Active Users',
+                data: {{ charts.active_users|json_encode|raw }},
+                borderColor: '#36b9cc',
+                backgroundColor: 'rgba(54, 185, 204, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Users'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+    
+    // User Distribution Chart
+    const ctxUserDist = document.getElementById('userDistributionChart').getContext('2d');
+    const userDistChart = new Chart(ctxUserDist, {
+        type: 'doughnut',
+        data: {
+            labels: ['Basic Users', 'Premium Users', 'Admins'],
+            datasets: [{
+                data: {{ charts.user_distribution|json_encode|raw }},
+                backgroundColor: ['#4e73df', '#1cc88a', '#e74a3b'],
+                hoverBackgroundColor: ['#2e59d9', '#17a673', '#be2617'],
+                hoverBorderColor: "rgba(234, 236, 244, 1)",
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            cutout: '70%'
+        }
+    });
+    
+    // Revenue Chart
+    const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(ctxRevenue, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Monthly Revenue',
+                data: {{ charts.revenue_amounts|json_encode|raw }},
+                borderColor: '#1cc88a',
+                backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue (USD)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Revenue Breakdown Chart
+    const ctxRevenueBreakdown = document.getElementById('revenueBreakdownChart').getContext('2d');
+    const revenueBreakdownChart = new Chart(ctxRevenueBreakdown, {
+        type: 'doughnut',
+        data: {
+            labels: ['Credit Purchases', 'Premium Subscriptions', 'Other'],
+            datasets: [{
+                data: {{ charts.revenue_breakdown|json_encode|raw }},
+                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
+                hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+                hoverBorderColor: "rgba(234, 236, 244, 1)",
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            cutout: '75%'
+        }
+    });
+    
+    // Handle date range selection
+    const dateRangeButtons = document.querySelectorAll('.date-range-selector .btn-group .btn');
+    if (dateRangeButtons.length > 0) {
+        dateRangeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                dateRangeButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                // In a real app, this would trigger a data refresh
+            });
+        });
+    }
+    
+    // Initialize date pickers to today minus 30 days and today
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    if (startDateInput && endDateInput) {
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        endDateInput.valueAsDate = today;
+        startDateInput.valueAsDate = thirtyDaysAgo;
+    }
+    
+    // Set up modal button handlers (for demonstration)
+    // Handle date range button clicks
+    document.querySelectorAll('.date-range-selector .btn-group .btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Get the selected range
+            const range = this.textContent.trim();
+            
+            // Submit the range via a form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ path('app_admin_set_date_range') }}';
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_csrf_token';
+            csrfToken.value = '{{ csrf_token('set_date_range') }}';
+            form.appendChild(csrfToken);
+            
+            // Add range
+            const rangeInput = document.createElement('input');
+            rangeInput.type = 'hidden';
+            rangeInput.name = 'range';
+            rangeInput.value = range;
+            form.appendChild(rangeInput);
+            
+            // Submit form
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        });
+    });
+});
+</script>
+{% endblock %}

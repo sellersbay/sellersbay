@@ -1,0 +1,62 @@
+###> symfony/framework-bundle ###
+/.env
+/.env.local
+/.env.*
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+.phpunit.result.cache
+###< phpunit/phpunit ###
+
+###> symfony/phpunit-bridge ###
+/.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###
+
+###> Composer ###
+/composer.phar
+/vendor/
+/composer.lock
+###< Composer ###
+
+###> Symfony logs & cache ###
+/var/log/
+/var/cache/
+###< Symfony logs & cache ###
+
+###> Ignore IDE and system files ###
+# JetBrains IDEs
+/.idea/
+# VS Code
+/.vscode/
+# Mac system files
+.DS_Store
+# Windows system files
+Thumbs.db
+# Backup files 
+/backup.sql
+/backups/
+/db_backups/
+/backup_database.bat
+# Linux system swap files
+*.swp
+###< Ignore IDE and system files ###
+
+###> Node.js dependencies (if applicable) ###
+/node_modules/
+/npm-debug.log
+/yarn.lock
+/pnpm-lock.yaml
+###< Node.js dependencies ###

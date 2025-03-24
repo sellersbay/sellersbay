@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Insufficient Credits - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-coins fa-4x text-warning"></i>
+                    </div>
+                    <h2>Insufficient Credits</h2>
+                    <p class="lead text-muted mb-4">
+                        You need at least 1 credit to generate SEO content.
+                        Your current balance: {{ app.user.credits }} credits
+                    </p>
+
+                    <div class="alert alert-info mx-auto" style="max-width: 500px;">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle"></i> About Credits</h5>
+                        <p class="mb-0">
+                            Each content generation uses 1 credit. Credits are used to generate:
+                        </p>
+                        <ul class="list-unstyled mt-2 mb-0">
+                            <li><i class="fas fa-check text-success"></i> SEO-optimized product descriptions</li>
+                            <li><i class="fas fa-check text-success"></i> Meta descriptions</li>
+                            <li><i class="fas fa-check text-success"></i> Short descriptions</li>
+                            <li><i class="fas fa-check text-success"></i> Image alt text</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ path('app_subscription_plans') }}" class="btn btn-primary btn-lg me-2">
+                            <i class="fas fa-shopping-cart"></i> Purchase Credits
+                        </a>
+                        <a href="{{ path('app_product_edit', {'id': product.id}) }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-arrow-left"></i> Back to Product
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Credit Packages</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-3">Starter</h3>
+                                    <div class="display-4 mb-3">10</div>
+                                    <p class="text-muted mb-4">Credits</p>
+                                    <a href="{{ path('app_subscription_purchase', {'plan': 'starter'}) }}" 
+                                       class="btn btn-outline-primary">
+                                        Purchase for $9.99
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <div class="ribbon ribbon-top-right"><span>Best Value</span></div>
+                                    <h3 class="mb-3">Professional</h3>
+                                    <div class="display-4 mb-3">50</div>
+                                    <p class="text-muted mb-4">Credits</p>
+                                    <a href="{{ path('app_subscription_purchase', {'plan': 'professional'}) }}" 
+                                       class="btn btn-primary">
+                                        Purchase for $39.99
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-3">Enterprise</h3>
+                                    <div class="display-4 mb-3">100</div>
+                                    <p class="text-muted mb-4">Credits</p>
+                                    <a href="{{ path('app_subscription_purchase', {'plan': 'enterprise'}) }}" 
+                                       class="btn btn-outline-primary">
+                                        Purchase for $69.99
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ribbon {
+    width: 150px;
+    height: 150px;
+    overflow: hidden;
+    position: absolute;
+}
+.ribbon span {
+    position: absolute;
+    display: block;
+    width: 225px;
+    padding: 8px 0;
+    background-color: #3498db;
+    box-shadow: 0 5px 10px rgba(0,0,0,.1);
+    color: #fff;
+    font: 700 13px/1 'Open Sans', sans-serif;
+    text-shadow: 0 1px 1px rgba(0,0,0,.2);
+    text-transform: uppercase;
+    text-align: center;
+}
+.ribbon-top-right {
+    top: -10px;
+    right: -10px;
+}
+.ribbon-top-right span {
+    left: -25px;
+    top: 30px;
+    transform: rotate(45deg);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!-- Mantis Bootstrap Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 mantis-navbar" style="display: flex !important;">
+    <div class="container">
+        <a class="navbar-brand" href="http://localhost/sellersbay/">
+            <img src="{{ asset('/ecommerce-tools/assets/images/sellersbay-logo.png') }}" alt="Seller's Bay" height="50" class="d-inline-block align-text-top">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link text-primary {{ app.request.pathInfo == '/' ? 'active fw-bold' : '' }}" href="http://localhost/sellersbay/" style="color: #004080 !important;">Home</a></li>
+                <li class="nav-item"><a class="nav-link text-primary {{ app.request.pathInfo starts with '/dashboard' ? 'active fw-bold' : '' }}" href="{{ path('app_dashboard') }}" style="color: #004080 !important;">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link text-primary {{ app.request.pathInfo starts with '/products' ? 'active fw-bold' : '' }}" href="{{ path('app_products') }}" style="color: #004080 !important;">Products</a></li>
+                <li class="nav-item"><a class="nav-link text-primary {{ app.request.pathInfo starts with '/woocommerce' ? 'active fw-bold' : '' }}" href="{{ path('app_woocommerce_connect') }}" style="color: #004080 !important;">Connect</a></li>
+                <li class="nav-item"><a class="nav-link text-primary {{ app.request.pathInfo starts with '/account' ? 'active fw-bold' : '' }}" href="{{ path('app_dashboard') }}" style="color: #004080 !important;">Account</a></li>
+                <li class="nav-item"><a class="nav-link text-primary {{ app.request.pathInfo starts with '/support' ? 'active fw-bold' : '' }}" href="{{ path('app_support') }}" style="color: #004080 !important;">Support</a></li>
+            </ul>
+            <ul class="navbar-nav">
+                {% if app.user %}
+                <li class="nav-item me-3">
+                    <a href="{{ path('app_buy_credits') }}" class="btn btn-sm" style="background-color: #004080; color: white;">
+                        <i class="fas fa-coins text-warning"></i> Buy Credits
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <span class="badge bg-light d-inline-block mt-2" style="color: #004080;">
+                        <i class="fas fa-coins text-warning"></i> {{ getUserCredits() }} Credits
+                    </span>
+                </li>
+                {% endif %}
+                <li class="nav-item dropdown ms-3">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" style="color: #004080;">
+                        <i class="fas fa-user-circle"></i> {{ app.user ? app.user.firstName|default('User') : 'Guest' }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if app.user %}
+                            <li><a class="dropdown-item" href="{{ path('app_dashboard') }}">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ path('app_dashboard') }}">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ path('app_logout') }}">Logout</a></li>
+                        {% else %}
+                            <li><a class="dropdown-item" href="{{ path('app_login') }}">Login</a></li>
+                            <li><a class="dropdown-item" href="{{ path('app_register') }}">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

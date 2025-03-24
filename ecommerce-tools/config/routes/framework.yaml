@@ -1,0 +1,21 @@
+when@dev:
+    _errors:
+        resource: '@FrameworkBundle/Resources/config/routing/errors.xml'
+        prefix: /_error
+
+# filepath: c:\Users\rober\projects\roboseo2\config\packages\framework.yaml
+framework:
+    secret: '%env(APP_SECRET)%'
+    router:
+        resource: '%kernel.project_dir%/config/routes.yaml'
+        type: attribute
+
+    # Attributes are enabled by default in Symfony 7.2
+
+    session: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

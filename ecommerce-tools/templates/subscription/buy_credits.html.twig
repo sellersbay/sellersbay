@@ -1,0 +1,137 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Buy Additional Credits - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h1 class="h3 mb-0">Purchase Additional Credits</h1>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    <div class="alert alert-success mb-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">Active Subscription: {{ subscription_tier|capitalize }}</h5>
+                                <p class="mb-0">
+                                    You have an active {{ subscription_tier|capitalize }} subscription. You can purchase additional 
+                                    credit packs below to supplement your monthly included credits.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">About Add-On Credits</h5>
+                                <p class="mb-0">
+                                    These additional credits supplement your subscription's monthly allocation. 
+                                    Each content generation uses 1 credit and includes:
+                                </p>
+                                <ul class="mb-0 mt-2">
+                                    <li>Product descriptions optimized for search engines</li>
+                                    <li>Short descriptions for product listings</li>
+                                    <li>Meta descriptions for better SEO</li>
+                                    <li>Image alt text for accessibility and SEO</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        {% for package_id, package in credit_packages %}
+                            <div class="col-md-4">
+                                <div class="card h-100 {% if package_id == 'medium' %}border-primary{% endif %}">
+                                    {% if package_id == 'medium' %}
+                                        <div class="ribbon ribbon-top-right">
+                                            <span>Best Value</span>
+                                        </div>
+                                    {% endif %}
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-4">{{ package.name }}</h3>
+                                        <p class="text-muted">Add-on credit package</p>
+                                        <div class="pricing mb-4">
+                                            <div class="h1 mb-0">${{ package.price }}</div>
+                                            <div class="text-muted">One-time payment</div>
+                                        </div>
+                                        <div class="credits-badge mb-4">
+                                            <span class="badge bg-primary p-2">
+                                                <i class="fas fa-coins"></i>
+                                                {{ package.credits }} Credits
+                                            </span>
+                                        </div>
+                                        <div class="d-grid">
+                                            <a href="{{ path('app_process_credit_purchase', {'package': package_id}) }}" 
+                                               class="btn {% if package_id == 'medium' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-lg">
+                                                Purchase Now
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <h4>Need More Credits?</h4>
+                        <p class="text-muted">
+                            Contact us for custom credit packages or bulk credit purchases.
+                        </p>
+                        <a href="#" class="btn btn-outline-primary">
+                            <i class="fas fa-envelope"></i> Contact Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ribbon {
+    width: 150px;
+    height: 150px;
+    overflow: hidden;
+    position: absolute;
+}
+.ribbon span {
+    position: absolute;
+    display: block;
+    width: 225px;
+    padding: 8px 0;
+    background-color: #3498db;
+    box-shadow: 0 5px 10px rgba(0,0,0,.1);
+    color: #fff;
+    font: 700 13px/1 'Open Sans', sans-serif;
+    text-shadow: 0 1px 1px rgba(0,0,0,.2);
+    text-transform: uppercase;
+    text-align: center;
+}
+.ribbon-top-right {
+    top: -10px;
+    right: -10px;
+}
+.ribbon-top-right span {
+    left: -25px;
+    top: 30px;
+    transform: rotate(45deg);
+}
+</style>
+{% endblock %}

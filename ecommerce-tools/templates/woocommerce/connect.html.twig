@@ -1,0 +1,139 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connect WooCommerce Store - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">Connect WooCommerce Store</h1>
+                        <div>
+                            <a href="{{ path('app_woocommerce_dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle"></i> Getting Your API Keys</h5>
+                        <p>Follow these steps to get your WooCommerce API keys:</p>
+                        <ol class="mb-0">
+                            <li>Log in to your WordPress admin panel</li>
+                            <li>Go to WooCommerce > Settings > Advanced > REST API</li>
+                            <li>Click "Add Key" and set permissions to "Read/Write"</li>
+                            <li>Copy the Consumer Key and Consumer Secret</li>
+                        </ol>
+                    </div>
+
+                    {% if has_connection and not edit_mode %}
+                        {# Display connection details when not in edit mode #}
+                        <div class="mb-4">
+                            <h3 class="h4 mb-3">Your WooCommerce Connection</h3>
+                            
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-md-4 fw-bold">Store URL:</div>
+                                        <div class="col-md-8">{{ store_url }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4 fw-bold">Consumer Key:</div>
+                                        <div class="col-md-8">{{ consumer_key }}</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4 fw-bold">Consumer Secret:</div>
+                                        <div class="col-md-8">••••••••••••••••••••••</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <a href="{{ path('app_woocommerce_connect', {'edit': true}) }}" class="btn btn-primary">
+                                    <i class="fas fa-edit"></i> Edit Connection Details
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        {# Show the connection form in edit mode or when no connection exists #}
+                        <form method="post" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="store_url" class="form-label">Store URL</label>
+                                <input type="url" id="store_url" name="store_url" class="form-control" 
+                                      placeholder="https://your-store.com" required 
+                                      value="{{ store_url|default('') }}">
+                                <div class="form-text">Enter your WooCommerce store's full URL</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="consumer_key" class="form-label">Consumer Key</label>
+                                <input type="text" id="consumer_key" name="consumer_key" class="form-control" required
+                                      value="{{ consumer_key|default('') }}">
+                                <div class="form-text">Your WooCommerce API Consumer Key</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="consumer_secret" class="form-label">Consumer Secret</label>
+                                <input type="password" id="consumer_secret" name="consumer_secret" class="form-control" required>
+                                <div class="form-text">Your WooCommerce API Consumer Secret</div>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <h5 class="alert-heading"><i class="fas fa-shield-alt"></i> Security Notice</h5>
+                                <p class="mb-0">
+                                    Your API credentials are encrypted before being stored. Never share your Consumer Secret 
+                                    with anyone. If you suspect your keys have been compromised, revoke them immediately 
+                                    in your WordPress admin panel.
+                                </p>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-plug"></i> {% if has_connection %}Update{% else %}Connect{% endif %} Store
+                                </button>
+                                
+                                {% if has_connection and edit_mode %}
+                                    <a href="{{ path('app_woocommerce_connect') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}

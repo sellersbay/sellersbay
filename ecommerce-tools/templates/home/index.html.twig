@@ -1,0 +1,189 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Welcome to Seller's Bay{% endblock %}
+
+{% block body %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row align-items-center py-5">
+        <div class="col-md-6">
+            <h1 class="display-4 fw-bold text-primary">Transform Your E-Commerce Business</h1>
+            <p class="lead my-4">
+                Boost your sales with automated product listings, inventory management, and AI-powered descriptions.
+                Take your WooCommerce store to the next level.
+            </p>
+            <div class="d-flex gap-3 mt-4">
+                {% if app.user %}
+                    <a href="{{ path('app_dashboard') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-chart-line me-2"></i>Go to Dashboard
+                    </a>
+                {% else %}
+                    <a href="{{ path('app_login') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    <a href="{{ path('app_register') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="bg-primary bg-opacity-10 p-5 rounded-3 shadow-lg text-center">
+                <i class="fas fa-store text-primary fa-5x mb-4"></i>
+                <div class="d-flex justify-content-center gap-4 my-4">
+                    <div class="text-center">
+                        <i class="fas fa-chart-line text-primary fa-3x mb-2"></i>
+                        <p class="text-muted mb-0">Analytics</p>
+                    </div>
+                    <div class="text-center">
+                        <i class="fas fa-robot text-primary fa-3x mb-2"></i>
+                        <p class="text-muted mb-0">AI Tools</p>
+                    </div>
+                    <div class="text-center">
+                        <i class="fas fa-sync text-primary fa-3x mb-2"></i>
+                        <p class="text-muted mb-0">Integration</p>
+                    </div>
+                </div>
+                <p class="lead mt-3 mb-0">Your all-in-one WooCommerce solution</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-5">
+        <h2 class="text-center mb-5 text-primary">Why Choose Seller's Bay?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
+                            <i class="fas fa-robot text-primary fa-2x"></i>
+                        </div>
+                        <h3 class="card-title h5">AI-Powered Descriptions</h3>
+                        <p class="card-text">Generate compelling product descriptions with our advanced AI tools to engage customers and boost conversions.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
+                            <i class="fas fa-sync-alt text-primary fa-2x"></i>
+                        </div>
+                        <h3 class="card-title h5">WooCommerce Integration</h3>
+                        <p class="card-text">Seamlessly connect with your WooCommerce store for real-time synchronization of products, orders, and inventory.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
+                            <i class="fas fa-chart-pie text-primary fa-2x"></i>
+                        </div>
+                        <h3 class="card-title h5">Analytics Dashboard</h3>
+                        <p class="card-text">Monitor your performance with comprehensive analytics and insights to make data-driven decisions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="bg-primary bg-opacity-10 rounded-3 p-5 my-5 text-center">
+        <h2 class="text-primary mb-3">Ready to Supercharge Your Store?</h2>
+        <p class="lead mb-4">Join thousands of successful merchants who have transformed their business with Seller's Bay.</p>
+        {% if app.user %}
+            <a href="{{ path('app_dashboard') }}" class="btn btn-primary btn-lg px-4">
+                <i class="fas fa-chart-line me-2"></i>Go to Your Dashboard
+            </a>
+        {% else %}
+            <a href="{{ path('app_register') }}" class="btn btn-primary btn-lg px-4">
+                <i class="fas fa-rocket me-2"></i>Get Started Today
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Testimonials -->
+    <div class="py-5">
+        <h2 class="text-center mb-5 text-primary">What Our Customers Say</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex mb-3">
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <p class="card-text">"Seller's Bay has revolutionized how I manage my online store. The AI descriptions save me hours of work every week!"</p>
+                        <div class="d-flex align-items-center mt-3">
+                            <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <span>JD</span>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-0">John Doe</h6>
+                                <small class="text-muted">Fashion Retailer</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex mb-3">
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <p class="card-text">"The WooCommerce integration is flawless. Everything syncs perfectly, and I can manage my entire inventory from one place."</p>
+                        <div class="d-flex align-items-center mt-3">
+                            <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <span>JS</span>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-0">Jane Smith</h6>
+                                <small class="text-muted">Electronics Store Owner</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex mb-3">
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                        </div>
+                        <p class="card-text">"Since using Seller's Bay, my conversions have increased by 35%. The analytics help me understand what products are performing best."</p>
+                        <div class="d-flex align-items-center mt-3">
+                            <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <span>RJ</span>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-0">Robert Johnson</h6>
+                                <small class="text-muted">Home Goods Merchant</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

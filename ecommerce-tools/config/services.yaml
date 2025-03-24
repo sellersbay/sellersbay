@@ -1,0 +1,39 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    app.openai_api_key: '%env(OPENAI_API_KEY)%'
+    # Stripe parameters for payment processing
+    # These are test keys - replace with real API keys in production
+    stripe_secret_key: 'sk_test_51Qvg0jRjdxGNb8WKZyjNT0h9TRzpWPjyvrN5Z1cp017XYEaCGH0iR26jpYc4EtgvHSWLsCHdTWMn7yNZwfCd3fLO00EmZGU8V9'
+    stripe_public_key: 'pk_test_51Qvg0jRjdxGNb8WKiOgVL11Mj7f2mjVc7jLAKLiI4CnkxEHHUqYrsdCMCMwbEYia4Soeu7TPqpdn3YPf1L0YigHz00ue7jNfg6'
+    stripe_webhook_secret: 'https://2903-91-65-98-240.ngrok-free.app/webhook.php'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+    
+    # File-based user provider (database-free authentication)
+    App\Service\FileUserProvider:
+        arguments: ['%kernel.project_dir%/var/users.json']
+        public: true
+    
+    App\Service\AIService:
+        arguments:
+            $openaiApiKey: '%app.openai_api_key%'

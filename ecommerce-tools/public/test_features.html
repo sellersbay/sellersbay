@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WooCommerce Import Feature Tests</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .test-output {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            min-height: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        .success-log {
+            color: green;
+        }
+        .error-log {
+            color: red;
+        }
+        .warning-log {
+            color: orange;
+        }
+        .info-log {
+            color: blue;
+        }
+        .progress-container {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .category-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .category-item {
+            padding: 8px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .pagination-demo {
+            margin-top: 20px;
+        }
+        .product-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .product-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .duplicate-badge {
+            background-color: #dc3545;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="mb-4">WooCommerce Import Feature Tests</h1>
+        <p>This page demonstrates and tests the functionality implemented for the WooCommerce product import task.</p>
+        
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> About these tests</h5>
+            <p>These tests simulate the functionality implemented in the WooCommerce import page. They do not require a server connection and can be run directly in the browser.</p>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="featureTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pause-tab" data-bs-toggle="tab" data-bs-target="#pause" type="button" role="tab" aria-controls="pause" aria-selected="true">Pause Button</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab" aria-controls="categories" aria-selected="false">Category Selection</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pagination-tab" data-bs-toggle="tab" data-bs-target="#pagination" type="button" role="tab" aria-controls="pagination" aria-selected="false">Pagination</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="duplicates-tab" data-bs-toggle="tab" data-bs-target="#duplicates" type="button" role="tab" aria-controls="duplicates" aria-selected="false">Duplicate Handling</button>
+            </li>
+        </ul>
+        
+        <!-- Tab Content -->
+        <div class="tab-content" id="featureTabsContent">
+            <!-- Pause Button Test -->
+            <div class="tab-pane fade show active" id="pause" role="tabpanel" aria-labelledby="pause-tab">
+                <div class="test-section">
+                    <h3>Pause Button Functionality Test</h3>
+                    <p>This test simulates the pause/resume functionality for product downloads.</p>
+                    
+                    <div class="progress-container">
+                        <h5 id="pauseProgressTitle">Download Progress</h5>
+                        <div class="progress mt-2">
+                            <div id="pauseProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <p class="mt-2 mb-0">
+                            <span id="pauseImportStatus">Ready to start download...</span>
+                        </p>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span id="pauseProgressStats"></span>
+                            <div>
+                                <button id="startDownloadBtn" class="btn btn-sm btn-success">
+                                    <i class="fas fa-play"></i> Start Download
+                                </button>
+                                <button id="pauseDownloadBtn" class="btn btn-sm btn-outline-primary" disabled>
+                                    <i class="fas fa-pause"></i> Pause
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-output" id="pauseTestOutput">
+                        <div class="log-entry info-log">Test ready. Click "Start Download" to begin.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Category Selection Test -->
+            <div class="tab-pane fade" id="categories" role="tabpanel" aria-labelledby="categories-tab">
+                <div class="test-section">
+                    <h3>Category Selection Workflow Test</h3>
+                    <p>This test demonstrates the two-step category selection process for downloading products.</p>
+                    
+                    <div id="step1Categories" class="mb-4">
+                        <h5>Step 1: Download Categories</h5>
+                        <p class="text-muted mb-2">First, download categories from your WooCommerce store:</p>
+                        <button id="downloadCategoriesBtn" class="btn btn-primary">
+                            <i class="fas fa-tags"></i> Download Categories
+                        </button>
+                    </div>
+                    
+                    <div id="step2SelectCategories" class="mb-4 d-none">
+                        <h5>Step 2: Select Categories</h5>
+                        <p class="text-muted mb-2">Select which categories to import products from:</p>
+                        <div id="categorySelectionContainer" class="mb-3">
+                            <!-- Categories will be loaded here -->
+                        </div>
+                        <button id="downloadProductsByCategoryBtn" class="btn btn-lg btn-primary" disabled>
+                            <i class="fas fa-cloud-download-alt"></i> Download Selected Categories
+                        </button>
+                    </div>
+                    
+                    <div class="progress-container d-none" id="categoryDownloadProgress">
+                        <h5>Downloading Products from Selected Categories</h5>
+                        <div class="progress mt-2">
+                            <div id="categoryProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <p class="mt-2 mb-0">
+                            <span id="categoryImportStatus">Preparing to download products...</span>
+                        </p>
+                    </div>
+                    
+                    <div class="test-output" id="categoryTestOutput">
+                        <div class="log-entry info-log">Test ready. Click "Download Categories" to begin the workflow.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pagination Test -->
+            <div class="tab-pane fade" id="pagination" role="tabpanel" aria-labelledby="pagination-tab">
+                <div class="test-section">
+                    <h3>Pagination Functionality Test</h3>
+                    <p>This test demonstrates the pagination for product display with configurable items per page.</p>
+                    
+                    <div class="mb-3">
+                        <label for="itemsPerPageInput" class="form-label">Items per page:</label>
+                        <input type="number" class="form-control" id="itemsPerPageInput" value="5" min="1" max="50" style="width: 100px;">
+                    </div>
+                    
+                    <button id="generateProductsBtn" class="btn btn-primary">
+                        <i class="fas fa-list"></i> Generate Sample Products
+                    </button>
+                    
+                    <div class="product-list d-none" id="productListContainer">
+                        <div id="productItems">
+                            <!-- Products will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="pagination-demo d-none" id="paginationControls">
+                        <nav aria-label="Products pagination">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item disabled" id="prevPageItem">
+                                    <a class="page-link" href="#" id="prevPageLink">Previous</a>
+                                </li>
+                                <li class="page-item active">
+                                    <span class="page-link" id="currentPageDisplay">Page 1</span>
+                                </li>
+                                <li class="page-item" id="nextPageItem">
+                                    <a class="page-link" href="#" id="nextPageLink">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                        <p class="text-center text-muted"><small id="paginationInfo">Showing page 1 of 1</small></p>
+                    </div>
+                    
+                    <div class="test-output" id="paginationTestOutput">
+                        <div class="log-entry info-log">Test ready. Click "Generate Sample Products" to begin.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Duplicate Handling Test -->
+            <div class="tab-pane fade" id="duplicates" role="tabpanel" aria-labelledby="duplicates-tab">
+                <div class="test-section">
+                    <h3>Duplicate Product Handling Test</h3>
+                    <p>This test demonstrates how duplicate products are detected and displayed to the user.</p>
+                    
+                    <div class="mb-3">
+                        <label for="duplicateRateInput" class="form-label">Duplicate rate (%):</label>
+                        <input type="number" class="form-control" id="duplicateRateInput" value="30" min="0" max="100" style="width: 100px;">
+                    </div>
+                    
+                    <button id="importWithDuplicatesBtn" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Import Products with Duplicates
+                    </button>
+                    
+                    <div class="progress-container d-none" id="duplicateImportProgress">
+                        <h5>Importing Products</h5>
+                        <div class="progress mt-2">
+                            <div id="duplicateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <p class="mt-2 mb-0">
+                            <span id="duplicateImportStatus">Preparing to import products...</span>
+                        </p>
+                    </div>
+                    
+                    <div class="test-output" id="duplicateTestOutput">
+                        <div class="log-entry info-log">Test ready. Click "Import Products with Duplicates" to begin.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duplicate Products Modal -->
+    <div class="modal fade" id="duplicateProductsModal" tabindex="-1" aria-labelledby="duplicateProductsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="duplicateProductsModalLabel">Duplicate Products</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>The following products were skipped because they already exist in your database:</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="duplicateProductsList">
+                                <!-- Duplicate products will be listed here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Helper function to log to test output
+            function log(containerId, message, type = 'info') {
+                const container = document.getElementById(containerId);
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}-log`;
+                logEntry.textContent = message;
+                container.appendChild(logEntry);
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // ========== PAUSE BUTTON TEST ==========
+            
+            // Elements
+            const pauseProgressBar = document.getElementById('pauseProgressBar');
+            const pauseImportStatus = document.getElementById('pauseImportStatus');
+            const pauseProgressStats = document.getElementById('pauseProgressStats');
+            const pauseDownloadBtn = document.getElementById('pauseDownloadBtn');
+            const startDownloadBtn = document.getElementById('startDownloadBtn');
+            const pauseProgressTitle = document.getElementById('pauseProgressTitle');
+            
+            // State
+            let isPaused = false;
+            let isDownloading = false;
+            let downloadInterval = null;
+            let currentItemIndex = 0;
+            let totalItems = 100;
+            
+            // Event Handlers
+            startDownloadBtn.addEventListener('click', function() {
+                if (isDownloading) return;
+                
+                log('pauseTestOutput', 'Starting download process...', 'info');
+                startDownloadProcess();
+                this.disabled = true;
+                pauseDownloadBtn.disabled = false;
+            });
+            
+            pauseDownloadBtn.addEventListener('click', function() {
+                if (!isDownloading) return;
+                
+                isPaused = !isPaused;
+                
+                if (isPaused) {
+                    log('pauseTestOutput', 'Download paused at item ' + currentItemIndex, 'warning');
+                    this.innerHTML = '<i class="fas fa-play"></i> Resume';
+                    clearInterval(downloadInterval);
+                } else {
+                    log('pauseTestOutput', 'Download resumed from item ' + currentItemIndex, 'success');
+                    this.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                    continueDownloadProcess();
+                }
+            });
+            
+            // Start download process
+            function startDownloadProcess() {
+                isDownloading = true;
+                isPaused = false;
+                currentItemIndex = 0;
+                
+                // Reset progress UI
+                pauseProgressBar.style.width = '0%';
+                pauseProgressBar.textContent = '0%';
+                pauseImportStatus.textContent = 'Starting download...';
+                pauseProgressTitle.textContent = 'Download in Progress';
+                
+                continueDownloadProcess();
+            }
+            
+            // Continue download after pause
+            function continueDownloadProcess() {
+                downloadInterval = setInterval(() => {
+                    if (isPaused) return;
+                    
+                    // Increment progress
+                    currentItemIndex += 5;
+                    const progress = (currentItemIndex / totalItems) * 100;
+                    pauseProgressBar.style.width = `${progress}%`;
+                    pauseProgressBar.textContent = `${Math.round(progress)}%`;
+                    pauseImportStatus.textContent = `Downloading item ${currentItemIndex} of ${totalItems}...`;
+                    pauseProgressStats.textContent = `Items processed: ${currentItemIndex} of ${totalItems}`;
+                    
+                    log('pauseTestOutput', `Downloaded items ${currentItemIndex-5+1}-${currentItemIndex} of ${totalItems}`, 'info');
+                    
+                    // Check if complete
+                    if (currentItemIndex >= totalItems) {
+                        clearInterval(downloadInterval);
+                        pauseImportStatus.textContent = 'Download completed successfully!';
+                        pauseProgressBar.style.width = '100%';
+                        pauseProgressBar.textContent = '100%';
+                        pauseProgressStats.textContent = `Items processed: ${totalItems} of ${totalItems}`;
+                        isDownloading = false;
+                        startDownloadBtn.disabled = false;
+                        pauseDownloadBtn.disabled = true;
+                        pauseDownloadBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                        
+                        log('pauseTestOutput', 'Download process completed successfully!', 'success');
+                    }
+                }, 500);
+            }
+            
+            // ========== CATEGORY SELECTION TEST ==========
+            
+            // Sample categories
+            const sampleCategories = [
+                'Electronics', 'Clothing', 'Home & Garden', 'Books', 'Toys',
+                'Automotive', 'Sports & Outdoors', 'Beauty', 'Health', 'Jewelry',
+                'Office Products', 'Pet Supplies', 'Tools & Home Improvement'
+            ];
+            
+            // Elements
+            const downloadCategoriesBtn = document.getElementById('downloadCategoriesBtn');
+            const step1Categories = document.getElementById('step1Categories');
+            const step2SelectCategories = document.getElementById('step2SelectCategories');
+            const categorySelectionContainer = document.getElementById('categorySelectionContainer');
+            const downloadProductsByCategoryBtn = document.getElementById('downloadProductsByCategoryBtn');
+            const categoryDownloadProgress = document.getElementById('categoryDownloadProgress');
+            const categoryProgressBar = document.getElementById('categoryProgressBar');
+            const categoryImportStatus = document.getElementById('categoryImportStatus');
+            
+            // State
+            let selectedCategories = [];
+            
+            // Event Handlers
+            downloadCategoriesBtn.addEventListener('click', function() {
+                log('categoryTestOutput', 'Downloading categories...', 'info');
+                
+                // Simulate network delay
+                setTimeout(() => {
+                    displayCategorySelection(sampleCategories);
+                    log('categoryTestOutput', `Downloaded ${sampleCategories.length} categories successfully.`, 'success');
+                    
+                    // Hide step 1, show step 2
+                    step1Categories.classList.add('d-none');
+                    step2SelectCategories.classList.remove('d-none');
+                }, 1500);
+            });
+            
+            downloadProductsByCategoryBtn.addEventListener('click', function() {
+                if (selectedCategories.length === 0) {
+                    log('categoryTestOutput', 'Please select at least one category.', 'error');
+                    return;
+                }
+                
+                log('categoryTestOutput', `Starting download for ${selectedCategories.length} categories: ${selectedCategories.join(', ')}`, 'info');
+                
+                // Show progress
+                step2SelectCategories.classList.add('d-none');
+                categoryDownloadProgress.classList.remove('d-none');
+                
+                // Start simulated download
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    categoryProgressBar.style.width = `${progress}%`;
+                    categoryProgressBar.textContent = `${progress}%`;
+                    
+                    if (progress < 50) {
+                        categoryImportStatus.textContent = `Downloading products from category "${selectedCategories[0]}"...`;
+                    } else if (progress < 100) {
+                        const categoryIndex = Math.min(Math.floor((progress - 50) / 50 * selectedCategories.length), selectedCategories.length - 1);
+                        categoryImportStatus.textContent = `Downloading products from category "${selectedCategories[categoryIndex]}"...`;
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        categoryImportStatus.textContent = `Download completed for all selected categories!`;
+                        log('categoryTestOutput', 'Download completed for all selected categories!', 'success');
+                    }
+                }, 200);
+            });
+            
+            // Display category selection UI
+            function displayCategorySelection(categories) {
+                // Clear container
+                categorySelectionContainer.innerHTML = '';
+                
+                // Add "Select All" checkbox
+                const selectAllDiv = document.createElement('div');
+                selectAllDiv.className = 'form-check mb-3';
+                selectAllDiv.innerHTML = `
+                    <input class="form-check-input" type="checkbox" id="categorySelectAll">
+                    <label class="form-check-label fw-bold" for="categorySelectAll">
+                        Select All Categories
+                    </label>
+                `;
+                categorySelectionContainer.appendChild(selectAllDiv);
+                
+                // Select All event handler
+                const selectAllCheckbox = document.getElementById('categorySelectAll');
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = categorySelectionContainer.querySelectorAll('.category-checkbox');
+                    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+                    updateSelectedCategories();
+                });
+                
+                // Add category container
+                const categoryContainer = document.createElement('div');
+                categoryContainer.className = 'row';
+                
+                // Add each category checkbox
+                categories.forEach(category => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-2';
+                    
+                    const categoryCheckbox = document.createElement('div');
+                    categoryCheckbox.className = 'form-check';
+                    categoryCheckbox.innerHTML = `
+                        <input class="form-check-input category-checkbox" type="checkbox" value="${category}" id="category_${category.replace(/\s+/g, '_')}">
+                        <label class="form-check-label" for="category_${category.replace(/\s+/g, '_')}">
+                            ${category}
+                        </label>
+                    `;
+                    
+                    col.appendChild(categoryCheckbox);
+                    categoryContainer.appendChild(col);
+                });
+                
+                categorySelectionContainer.appendChild(categoryContainer);
+                
+                // Add event listeners to checkboxes
+                const checkboxes = categorySelectionContainer.querySelectorAll('.category-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectedCategories);
+                });
+            }
+            
+            // Update selected categories array
+            function updateSelectedCategories() {
+                const checkboxes = categorySelectionContainer.querySelectorAll('.category-checkbox:checked');
+                selectedCategories = Array.from(checkboxes).map(checkbox => checkbox.value);
+                
+                // Update download button state
+                downloadProductsByCategoryBtn.disabled = selectedCategories.length === 0;
+                
+                // Update Select All state
+                const selectAllCheckbox = document.getElementById('categorySelectAll');
+                const allCheckboxes = categorySelectionContainer.querySelectorAll('.category-checkbox');
+                
+                if (checkboxes.length === allCheckboxes.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (checkboxes.length === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.indeterminate = true;
+                }
+                
+                log('categoryTestOutput', `Selected ${selectedCategories.length} categories: ${selectedCategories.join(', ') || 'none'}`, 'info');
+            }
+            
+            // ========== PAGINATION TEST ==========
+            
+            // Elements
+            const generateProductsBtn = document.getElementById('generateProductsBtn');
+            const itemsPerPageInput = document.getElementById('itemsPerPageInput');
+            const productListContainer = document.getElementById('productListContainer');
+            const productItems = document.getElementById('productItems');
+            const paginationControls = document.getElementById('paginationControls');
+            const prevPageLink = document.getElementById('prevPageLink');
+            const nextPageLink = document.getElementById('nextPageLink');
+            const prevPageItem = document.getElementById('prevPageItem');
+            const nextPageItem = document.getElementById('nextPageItem');
+            const currentPageDisplay = document.getElementById('currentPageDisplay');
+            const paginationInfo = document.getElementById('paginationInfo');
+            
+            // State
+            let allProducts = [];
+            let currentPage = 1;
+            let totalPages = 1;
+            
+            // Event Handlers
+            generateProductsBtn.addEventListener('click', function() {
+                const productCount = 50; // Fixed number of sample products
+                
+                log('paginationTestOutput', `Generating ${productCount} sample products...`, 'info');
+                
+                // Generate sample products
+                allProducts = Array.from({ length: productCount }, (_, i) => ({
+                    id: i + 1,
+                    name: `Sample Product ${i + 1}`,
+                    price: (Math.random() * 100).toFixed(2),
+                    category: sampleCategories[Math.floor(Math.random() * sampleCategories.length)]
+                }));
+                
+                // Show product list and pagination
+                productListContainer.classList.remove('d-none');
+                paginationControls.classList.remove('d-none');
+                
+                // Reset to first page
+                currentPage = 1;
+                renderProductPage();
+                
+                log('paginationTestOutput', `Generated ${productCount} sample products successfully.`, 'success');
+            });
+            
+            // Pagination event handlers
+            prevPageLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderProductPage();
+                    log('paginationTestOutput', `Navigated to page ${currentPage}`, 'info');
+                }
+            });
+            
+            nextPageLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderProductPage();
+                    log('paginationTestOutput', `Navigated to page ${currentPage}`, 'info');
+                }
+            });
+            
+            // Handle items per page change
+            itemsPerPageInput.addEventListener('change', function() {
+                if (allProducts.length > 0) {
+                    currentPage = 1; // Reset to first page
+                    renderProductPage();
+                    log('paginationTestOutput', `Changed items per page to ${this.value}`, 'info');
+                }
+            });
+            
+            // Render products for current page
+            function renderProductPage() {
+                const itemsPerPage = parseInt(itemsPerPageInput.value, 10);
+                totalPages = Math.ceil(allProducts.length / itemsPerPage);
+                
+                // Update pagination display
+                currentPageDisplay.textContent = `Page ${currentPage}`;
+                paginationInfo.textContent = `Showing page ${currentPage} of ${totalPages}`;
+                
+                // Enable/disable prev/next buttons
+                if (currentPage <= 1) {
+                    prevPageItem.classList.add('disabled');
+                } else {
+                    prevPageItem.classList.remove('disabled');
+                }
+                
+                if (currentPage >= totalPages) {
+                    nextPageItem.classList.add('disabled');
+                } else {
+                    nextPageItem.classList.remove('disabled');
+                }
+                
+                // Calculate start and end indices
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, allProducts.length);
+                
+                // Get products for current page
+                const pagedProducts = allProducts.slice(startIndex, endIndex);
+                
+                // Render products
+                productItems.innerHTML = '';
+                pagedProducts.forEach(product => {
+                    const productElement = document.createElement('div');
+                    productElement.className = 'product-item';
+                    productElement.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>${product.name}</strong>
+                                <div><small>Category: ${product.category}</small></div>
+                            </div>
+                            <div>
+                                $${product.price}
+                            </div>
+                        </div>
+                    `;
+                    productItems.appendChild(productElement);
+                });
+            }
+            
+            // ========== DUPLICATE HANDLING TEST ==========
+            
+            // Elements
+            const importWithDuplicatesBtn = document.getElementById('importWithDuplicatesBtn');
+            const duplicateRateInput = document.getElementById('duplicateRateInput');
+            const duplicateImportProgress = document.getElementById('duplicateImportProgress');
+            const duplicateProgressBar = document.getElementById('duplicateProgressBar');
+            const duplicateImportStatus = document.getElementById('duplicateImportStatus');
+            const duplicateProductsList = document.getElementById('duplicateProductsList');
+            const duplicateProductsModal = new bootstrap.Modal(document.getElementById('duplicateProductsModal'));
+            
+            // Event Handlers
+            importWithDuplicatesBtn.addEventListener('click', function() {
+                const duplicateRate = parseInt(duplicateRateInput.value, 10);
+                log('duplicateTestOutput', `Starting import with ${duplicateRate}% duplicate rate...`, 'info');
+                
+                // Show progress
+                duplicateImportProgress.classList.remove('d-none');
+                
+                // Generate 30 sample products
+                const products = Array.from({ length: 30 }, (_, i) => ({
+                    id: i + 1,
+                    name: `Product ${i + 1}`,
+                    duplicated: Math.random() * 100 < duplicateRate
+                }));
+                
+                // Identify duplicates
+                const duplicates = products.filter(p => p.duplicated);
+                
+                // Start simulated import
+                let progress = 0;
+                let processed = 0;
+                const interval = setInterval(() => {
+                    progress += 3;
+                    processed = Math.min(Math.floor(progress / 100 * products.length), products.length);
+                    
+                    duplicateProgressBar.style.width = `${progress}%`;
+                    duplicateProgressBar.textContent = `${Math.round(progress)}%`;
+                    duplicateImportStatus.textContent = `Importing product ${processed} of ${products.length}...`;
+                    
+                    // Log for every 5 products
+                    if (processed % 5 === 0 && processed > 0 && progress < 100) {
+                        const processedProducts = products.slice(processed - 5, processed);
+                        const processedDuplicates = processedProducts.filter(p => p.duplicated);
+                        
+                        log('duplicateTestOutput', `Processed products ${processed-5+1}-${processed} of ${products.length}. ${processedDuplicates.length} duplicates found.`, processedDuplicates.length > 0 ? 'warning' : 'info');
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        duplicateImportStatus.textContent = `Import completed. ${duplicates.length} duplicates found.`;
+                        
+                        log('duplicateTestOutput', `Import completed. Processed ${products.length} products with ${duplicates.length} duplicates.`, 'success');
+                        
+                        // If we have duplicates, show the modal
+                        if (duplicates.length > 0) {
+                            showDuplicatesModal(duplicates);
+                        }
+                    }
+                }, 200);
+            });
+            
+            // Show duplicates modal
+            function showDuplicatesModal(duplicates) {
+                // Clear current list
+                duplicateProductsList.innerHTML = '';
+                
+                // Add each duplicate product
+                duplicates.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${product.id}</td>
+                        <td>${product.name}</td>
+                    `;
+                    duplicateProductsList.appendChild(row);
+                });
+                
+                // Show modal
+                duplicateProductsModal.show();
+                
+                log('duplicateTestOutput', 'Showing duplicate products modal with ' + duplicates.length + ' products.', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

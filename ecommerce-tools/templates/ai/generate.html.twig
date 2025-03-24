@@ -1,0 +1,354 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generate SEO Content - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">Generate SEO Content</h1>
+                        <div>
+                            <a href="{{ path('app_product_edit', {'id': product.id}) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Product
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-coins fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading mb-1">Credit Usage</h5>
+                                <p class="mb-0">
+                                    You have {{ app.user.credits }} credits remaining.
+                                    {% if is_granted('ROLE_PREMIUM') %}
+                                        <span class="badge bg-primary ms-2">Premium User</span>
+                                    {% endif %}
+                                </p>
+                                <div class="mt-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="processingMode" id="standardProcessing" value="standard">
+                                        <label class="form-check-label" for="standardProcessing">
+                                            Standard Processing (0.5 credit) - Uses GPT-3.5 Turbo
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="processingMode" id="premiumProcessing" value="premium" checked>
+                                        <label class="form-check-label" for="premiumProcessing">
+                                            Premium Processing (1 credit) - Uses GPT-4 Turbo
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if is_granted('ROLE_PREMIUM') %}
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-crown text-primary me-2"></i>
+                                <h5 class="card-title mb-0">Premium Features</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form id="premiumOptionsForm">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="targetKeywords" class="form-label">Target Keywords</label>
+                                            <input type="text" class="form-control" id="targetKeywords" placeholder="e.g. organic cotton, sustainable, eco-friendly">
+                                            <div class="form-text">Separate multiple keywords with commas</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="competitorUrls" class="form-label">Competitor URLs</label>
+                                            <input type="text" class="form-control" id="competitorUrls" placeholder="e.g. competitor.com/product">
+                                            <div class="form-text">Separate multiple URLs with commas</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="contentTone" class="form-label">Content Tone</label>
+                                            <select class="form-select" id="contentTone">
+                                                <option value="professional">Professional</option>
+                                                <option value="casual">Casual/Friendly</option>
+                                                <option value="luxury">Luxury/Premium</option>
+                                                <option value="technical">Technical</option>
+                                                <option value="persuasive">Persuasive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="usePremiumFeatures" checked>
+                                    <label class="form-check-label" for="usePremiumFeatures">Enable enhanced premium features</label>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Current Content</h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6>Product Name</h6>
+                                    <p>{{ product.name }}</p>
+
+                                    <h6>Description</h6>
+                                    <p>{{ product.description }}</p>
+
+                                    <h6>Short Description</h6>
+                                    <p>{{ product.shortDescription }}</p>
+
+                                    <h6>Meta Description</h6>
+                                    <p>{{ product.metaDescription }}</p>
+
+                                    <h6>Image Alt Text</h6>
+                                    <p>{{ product.imageAltText }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Generated Content</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="generationProgress" class="d-none">
+                                        <div class="text-center py-4">
+                                            <div class="spinner-border text-primary mb-3" role="status">
+                                                <span class="visually-hidden">Generating...</span>
+                                            </div>
+                                            <p class="mb-0" id="generationStatus">Generating SEO content...</p>
+                                        </div>
+                                    </div>
+
+                                    <div id="generatedContent" class="d-none">
+                                        <div class="mb-3">
+                                            <label class="form-label">Target Keyphrase</label>
+                                            <input type="text" class="form-control" id="generatedTargetKeyphrase">
+                                            <div class="form-text text-muted">A focused SEO keyphrase (max 3 words) that people would use to find this product.</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Meta Title</label>
+                                            <input type="text" class="form-control" id="generatedMetaTitle">
+                                            <div class="form-text text-muted">SEO-optimized title for search engines (50-60 characters).</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Description</label>
+                                            <textarea class="form-control" id="generatedDescription" rows="5"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Short Description</label>
+                                            <textarea class="form-control" id="generatedShortDescription" rows="2"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Meta Description</label>
+                                            <textarea class="form-control" id="generatedMetaDescription" rows="2"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Image Alt Text</label>
+                                            <input type="text" class="form-control" id="generatedImageAltText">
+                                        </div>
+                                        
+                                        {% if is_granted('ROLE_PREMIUM') %}
+                                        <div class="mb-3 premium-feature">
+                                            <label class="form-label">
+                                                <i class="fas fa-crown text-primary"></i> SEO Keywords
+                                            </label>
+                                            <textarea class="form-control" id="generatedSeoKeywords" rows="4"></textarea>
+                                        </div>
+                                        <div class="mb-3 premium-feature">
+                                            <label class="form-label">
+                                                <i class="fas fa-crown text-primary"></i> Social Media Post
+                                            </label>
+                                            <textarea class="form-control" id="generatedSocialMediaPost" rows="3"></textarea>
+                                        </div>
+                                        {% endif %}
+                                        <div class="d-grid gap-2">
+                                            <button type="button" id="applyContent" class="btn btn-success">
+                                                <i class="fas fa-check"></i> Apply Generated Content
+                                            </button>
+                                            <button type="button" id="regenerateContent" class="btn btn-outline-primary">
+                                                <i class="fas fa-redo"></i> Generate Again
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="initialState">
+                                        <div class="text-center py-4">
+                                            <div class="mb-4">
+                                                <i class="fas fa-magic fa-4x text-primary"></i>
+                                            </div>
+                                            <h4>Ready to Generate</h4>
+                                            <p class="text-muted mb-4">
+                                                Click the button below to generate SEO-optimized content for your product.
+                                            </p>
+                                            <button type="button" id="generateContent" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-magic"></i> Generate Content
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const generateBtn = document.getElementById('generateContent');
+    const regenerateBtn = document.getElementById('regenerateContent');
+    const applyBtn = document.getElementById('applyContent');
+    const initialState = document.getElementById('initialState');
+    const generationProgress = document.getElementById('generationProgress');
+    const generatedContent = document.getElementById('generatedContent');
+    const generationStatus = document.getElementById('generationStatus');
+    function showProgress() {
+        initialState.classList.add('d-none');
+        generationProgress.classList.remove('d-none');
+        generatedContent.classList.add('d-none');
+    }
+
+    function showContent(content) {
+        // Set values for the new fields
+        document.getElementById('generatedTargetKeyphrase').value = content.targetKeyphrase || '';
+        document.getElementById('generatedMetaTitle').value = content.metaTitle || '';
+        
+        // Set values for existing fields
+        document.getElementById('generatedDescription').value = content.description || '';
+        document.getElementById('generatedShortDescription').value = content.shortDescription || '';
+        document.getElementById('generatedMetaDescription').value = content.metaDescription || '';
+        document.getElementById('generatedImageAltText').value = content.imageAltText || '';
+        
+        {% if is_granted('ROLE_PREMIUM') %}
+        // Set premium-only content if available
+        if (document.getElementById('generatedSeoKeywords')) {
+            document.getElementById('generatedSeoKeywords').value = content.seoKeywords || '';
+        }
+        
+        if (document.getElementById('generatedSocialMediaPost')) {
+            document.getElementById('generatedSocialMediaPost').value = content.socialMediaPost || '';
+        }
+        {% endif %}
+        generationProgress.classList.add('d-none');
+        generatedContent.classList.remove('d-none');
+    }
+
+    function generateContent() {
+        showProgress();
+
+        // Get options for request
+        let requestData = {
+            processingMode: document.querySelector('input[name="processingMode"]:checked').value
+        };
+        
+        {% if is_granted('ROLE_PREMIUM') %}
+        if (document.getElementById('usePremiumFeatures').checked) {
+            requestData.usePremiumFeatures = true;
+            requestData.targetKeywords = document.getElementById('targetKeywords').value;
+            requestData.competitorUrls = document.getElementById('competitorUrls').value;
+            requestData.tone = document.getElementById('contentTone').value;
+            requestData.platform = 'Instagram'; // Default platform for social media content
+        }
+        {% endif %}
+
+        fetch('{{ path('app_ai_process_content', {'id': product.id}) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showContent(data.content);
+            } else {
+                throw new Error(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error generating content: ' + error.message);
+            initialState.classList.remove('d-none');
+            generationProgress.classList.add('d-none');
+        });
+    }
+
+    function applyContent() {
+        const content = {
+            description: document.getElementById('generatedDescription').value,
+            shortDescription: document.getElementById('generatedShortDescription').value,
+            metaDescription: document.getElementById('generatedMetaDescription').value,
+            imageAltText: document.getElementById('generatedImageAltText').value,
+            targetKeyphrase: document.getElementById('generatedTargetKeyphrase').value,
+            metaTitle: document.getElementById('generatedMetaTitle').value
+        };
+
+        {% if is_granted('ROLE_PREMIUM') %}
+        // Add premium content if available
+        if (document.getElementById('generatedSeoKeywords')) {
+            content.seoKeywords = document.getElementById('generatedSeoKeywords').value;
+        }
+        
+        if (document.getElementById('generatedSocialMediaPost')) {
+            content.socialMediaPost = document.getElementById('generatedSocialMediaPost').value;
+        }
+        {% endif %}
+
+        fetch('{{ path('app_ai_apply_content', {'id': product.id}) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(content)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ path('app_product_edit', {'id': product.id}) }}';
+            } else {
+                throw new Error(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error applying content: ' + error.message);
+        });
+    }
+
+    generateBtn.addEventListener('click', generateContent);
+    regenerateBtn.addEventListener('click', generateContent);
+    applyBtn.addEventListener('click', applyContent);
+});
+</script>
+{% endblock %}

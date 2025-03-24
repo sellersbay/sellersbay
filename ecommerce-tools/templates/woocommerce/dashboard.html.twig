@@ -1,0 +1,529 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}WooCommerce Dashboard - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">WooCommerce Integration</h1>
+                        <div>
+                            <a href="{{ path('app_woocommerce_connect') }}" class="btn btn-primary">
+                                <i class="fas fa-plug"></i> Connect Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    {% if products is empty %}
+                        <div class="text-center py-5">
+                            <div class="mb-4">
+                                <i class="fas fa-store fa-4x text-muted"></i>
+                            </div>
+                            <h3>No Products Imported Yet</h3>
+                            <p class="text-muted">
+                                Connect your WooCommerce store and import products to get started.
+                            </p>
+                            <div class="mt-4">
+                                <a href="{{ path('app_woocommerce_import') }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-download"></i> Import Products
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Filter Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Products</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ path('app_woocommerce_dashboard') }}" method="get" class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="category" class="form-label">Category</label>
+                                        <select name="category" id="category" class="form-select">
+                                            <option value="">All Categories</option>
+                                            {% for category in categories %}
+                                                <option value="{{ category }}" {% if filter_category == category %}selected{% endif %}>{{ category }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="keyword" class="form-label">Search by Keyword</label>
+                                        <input type="text" name="keyword" id="keyword" class="form-control" placeholder="Enter keyword..." value="{{ filter_keyword }}">
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <div class="d-grid gap-2 d-md-flex w-100">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-filter"></i> Apply Filter
+                                            </button>
+                                            <a href="{{ path('app_woocommerce_dashboard') }}" class="btn btn-outline-secondary">
+                                                <i class="fas fa-undo"></i> Reset
+                                            </a>
+                                        </div>
+                                    </div>
+                                </form>
+                                
+                                {% if filter_category or filter_keyword %}
+                                <div class="mt-3">
+                                    <div class="alert alert-info mb-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>Active filters:</strong>
+                                                {% if filter_category %}<span class="badge bg-primary me-2">Category: {{ filter_category }}</span>{% endif %}
+                                                {% if filter_keyword %}<span class="badge bg-info me-2">Keyword: {{ filter_keyword }}</span>{% endif %}
+                                            </div>
+                                            <a href="{{ path('app_woocommerce_dashboard') }}" class="btn btn-sm btn-light">
+                                                <i class="fas fa-times"></i> Clear All Filters
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Product Section Tabs -->
+                        <ul class="nav nav-tabs mb-4" id="productTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="imported-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#imported" type="button" role="tab" 
+                                        aria-controls="imported" aria-selected="true">
+                                    Imported Products
+                                    <span class="badge bg-primary rounded-pill ms-2">
+                                        {{ products|filter(p => p.status == 'imported')|length }}
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="staged-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#staged" type="button" role="tab" 
+                                        aria-controls="staged" aria-selected="false">
+                                    Staged Products
+                                    <span class="badge bg-info rounded-pill ms-2">
+                                        {{ products|filter(p => p.status == 'ai_processed')|length }}
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="exported-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#exported" type="button" role="tab" 
+                                        aria-controls="exported" aria-selected="false">
+                                    Exported Products
+                                    <span class="badge bg-success rounded-pill ms-2">
+                                        {{ products|filter(p => p.status == 'exported')|length }}
+                                    </span>
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="productTabsContent">
+                            <!-- Imported Products Tab -->
+                            <div class="tab-pane fade show active" id="imported" role="tabpanel" aria-labelledby="imported-tab">
+                                <form id="processForm" method="post" action="{{ path('app_woocommerce_process_ai') }}">
+                                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllImported">
+                                            <label class="form-check-label" for="selectAllImported">
+                                                Select All Products
+                                            </label>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="submit" class="btn btn-success" id="processAiBtn" disabled>
+                                                <i class="fas fa-robot"></i> Process with AI
+                                                <span id="selectedCount" class="badge bg-light text-dark ms-1">(0)</span>
+                                            </button>
+                                            <button type="submit" class="btn btn-danger" id="deleteImportedBtn" disabled formaction="{{ path('app_woocommerce_delete') }}">
+                                                <i class="fas fa-trash"></i> Delete
+                                                <span id="selectedDeleteImportedCount" class="badge bg-light text-dark ms-1">(0)</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 40px;"></th>
+                                                    <th>ID</th>
+                                                    <th>WooCommerce ID</th>
+                                                    <th>Name</th>
+                                                    <th>Last Updated</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% set importedProducts = products|filter(p => p.status == 'imported') %}
+                                                {% if importedProducts is empty %}
+                                                    <tr>
+                                                        <td colspan="6" class="text-center py-4">
+                                                            <p class="text-muted mb-0">No imported products waiting for processing.</p>
+                                                        </td>
+                                                    </tr>
+                                                {% else %}
+                                                    {% for product in importedProducts %}
+                                                        <tr>
+                                                            <td>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input product-checkbox" 
+                                                                           type="checkbox" name="product_ids[]" 
+                                                                           value="{{ product.id }}" id="product_{{ product.id }}">
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ product.id }}</td>
+                                                            <td>{{ product.woocommerceId }}</td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    {% if product.imageUrl %}
+                                                                        <img src="{{ product.imageUrl }}" alt="{{ product.name }}" 
+                                                                             class="mr-2" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                                                                    {% else %}
+                                                                        <div class="bg-light text-center" style="width: 40px; height: 40px; line-height: 40px; margin-right: 10px;">
+                                                                            <i class="fas fa-image text-muted"></i>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    <div>{{ product.name }}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ product.updatedAt|date('Y-m-d H:i:s') }}</td>
+                                                            <td>
+                                                                <div class="btn-group">
+                                                                    <a href="{{ path('app_woocommerce_sync', {'id': product.id}) }}" 
+                                                                       class="btn btn-sm btn-outline-primary">
+                                                                        <i class="fas fa-sync"></i> Sync
+                                                                    </a>
+                                                                    <a href="{{ path('app_woocommerce_diagnostic', {'product_id': product.woocommerceId}) }}" 
+                                                                       class="btn btn-sm btn-outline-secondary" 
+                                                                       title="Diagnose connection issues">
+                                                                        <i class="fas fa-wrench"></i>
+                                                                    </a>
+                                                                    <a href="{{ path('app_ai_generate', {'id': product.id}) }}" 
+                                                                       class="btn btn-sm btn-outline-success">
+                                                                        <i class="fas fa-robot"></i> Generate
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Staged Products Tab -->
+                            <div class="tab-pane fade" id="staged" role="tabpanel" aria-labelledby="staged-tab">
+                                <form id="stagedForm" method="post" action="{{ path('app_woocommerce_delete') }}">
+                                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllStaged">
+                                            <label class="form-check-label" for="selectAllStaged">
+                                                Select All Products
+                                            </label>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger" id="deleteStagedBtn" disabled>
+                                            <i class="fas fa-trash"></i> Delete Selected
+                                            <span id="selectedStagedCount" class="badge bg-light text-dark ms-1">(0)</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 40px;"></th>
+                                                    <th>ID</th>
+                                                    <th>WooCommerce ID</th>
+                                                    <th>Name</th>
+                                                    <th>AI Processed</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% set stagedProducts = products|filter(p => p.status == 'ai_processed') %}
+                                                {% if stagedProducts is empty %}
+                                                    <tr>
+                                                        <td colspan="6" class="text-center py-4">
+                                                            <p class="text-muted mb-0">No products in staging. Process products with AI first.</p>
+                                                        </td>
+                                                    </tr>
+                                                {% else %}
+                                                    {% for product in stagedProducts %}
+                                                        <tr>
+                                                            <td>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input staged-checkbox" 
+                                                                           type="checkbox" name="product_ids[]" 
+                                                                           value="{{ product.id }}" id="staged_{{ product.id }}">
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ product.id }}</td>
+                                                            <td>{{ product.woocommerceId }}</td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    {% if product.imageUrl %}
+                                                                        <img src="{{ product.imageUrl }}" alt="{{ product.name }}" 
+                                                                             class="mr-2" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                                                                    {% else %}
+                                                                        <div class="bg-light text-center" style="width: 40px; height: 40px; line-height: 40px; margin-right: 10px;">
+                                                                            <i class="fas fa-image text-muted"></i>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    <div>{{ product.name }}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ product.updatedAt|date('Y-m-d H:i:s') }}</td>
+                                                            <td>
+                                                                <div class="btn-group">
+                                                                    <a href="{{ path('app_ai_generate', {'id': product.id, 'edit': true}) }}" 
+                                                                       class="btn btn-sm btn-outline-primary">
+                                                                        <i class="fas fa-edit"></i> Edit
+                                                                    </a>
+                                                                    <a href="{{ path('app_woocommerce_export', {'id': product.id}) }}" 
+                                                                       class="btn btn-sm btn-outline-success">
+                                                                        <i class="fas fa-upload"></i> Export to Shop
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Exported Products Tab -->
+                            <div class="tab-pane fade" id="exported" role="tabpanel" aria-labelledby="exported-tab">
+                                <form id="deleteForm" method="post" action="{{ path('app_woocommerce_delete') }}">
+                                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllExported">
+                                            <label class="form-check-label" for="selectAllExported">
+                                                Select All Products
+                                            </label>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                            <i class="fas fa-trash"></i> Delete Selected
+                                            <span id="selectedDeleteCount" class="badge bg-light text-dark ms-1">(0)</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 40px;"></th>
+                                                    <th>ID</th>
+                                                    <th>WooCommerce ID</th>
+                                                    <th>Name</th>
+                                                    <th>Exported On</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% set exportedProducts = products|filter(p => p.status == 'exported') %}
+                                                {% if exportedProducts is empty %}
+                                                    <tr>
+                                                        <td colspan="6" class="text-center py-4">
+                                                            <p class="text-muted mb-0">No products have been exported yet.</p>
+                                                        </td>
+                                                    </tr>
+                                                {% else %}
+                                                    {% for product in exportedProducts %}
+                                                        <tr>
+                                                            <td>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input exported-checkbox" 
+                                                                           type="checkbox" name="product_ids[]" 
+                                                                           value="{{ product.id }}" id="exported_{{ product.id }}">
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ product.id }}</td>
+                                                            <td>{{ product.woocommerceId }}</td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    {% if product.imageUrl %}
+                                                                        <img src="{{ product.imageUrl }}" alt="{{ product.name }}" 
+                                                                             class="mr-2" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                                                                    {% else %}
+                                                                        <div class="bg-light text-center" style="width: 40px; height: 40px; line-height: 40px; margin-right: 10px;">
+                                                                            <i class="fas fa-image text-muted"></i>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    <div>{{ product.name }}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ product.updatedAt|date('Y-m-d H:i:s') }}</td>
+                                                            <td>
+                                                                <div class="btn-group">
+                                                                    <a href="{{ path('app_woocommerce_sync', {'id': product.id}) }}" 
+                                                                       class="btn btn-sm btn-outline-primary">
+                                                                        <i class="fas fa-sync"></i> Sync
+                                                                    </a>
+                                                                    <a href="{{ path('app_woocommerce_diagnostic', {'product_id': product.woocommerceId}) }}" 
+                                                                       class="btn btn-sm btn-outline-secondary" 
+                                                                       title="Diagnose connection issues">
+                                                                        <i class="fas fa-wrench"></i>
+                                                                    </a>
+                                                                    <a href="{{ product.storeUrl }}/wp-admin/post.php?post={{ product.woocommerceId }}&action=edit" 
+                                                                       target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                                        <i class="fas fa-external-link-alt"></i> View in WooCommerce
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div>
+                                <a href="{{ path('app_woocommerce_import') }}" class="btn btn-primary">
+                                    <i class="fas fa-download"></i> Import More Products
+                                </a>
+                            </div>
+                            <div class="text-muted">
+                                Total Products: {{ products|length }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Imported Products Tab Process AI Functionality
+    initializeCheckboxes(
+        'selectAllImported', 
+        '.product-checkbox', 
+        'processAiBtn', 
+        'selectedCount', 
+        'processForm'
+    );
+    
+    // Imported Products Tab Delete Functionality
+    initializeCheckboxes(
+        'selectAllImported', 
+        '.product-checkbox', 
+        'deleteImportedBtn', 
+        'selectedDeleteImportedCount', 
+        'processForm'
+    );
+    
+    // Staged Products Tab Functionality
+    initializeCheckboxes(
+        'selectAllStaged', 
+        '.staged-checkbox', 
+        'deleteStagedBtn', 
+        'selectedStagedCount', 
+        'stagedForm'
+    );
+    
+    // Exported Products Tab Functionality
+    initializeCheckboxes(
+        'selectAllExported', 
+        '.exported-checkbox', 
+        'deleteBtn', 
+        'selectedDeleteCount', 
+        'deleteForm'
+    );
+    
+    // Function to initialize checkbox functionality for a tab
+    function initializeCheckboxes(selectAllId, checkboxClass, buttonId, countId, formId) {
+        const selectAllCheckbox = document.getElementById(selectAllId);
+        if (!selectAllCheckbox) return; // Exit if element doesn't exist
+        
+        const checkboxes = document.querySelectorAll(checkboxClass);
+        const actionButton = document.getElementById(buttonId);
+        const countBadge = document.getElementById(countId);
+        
+        // Function to update the selected count and button state
+        function updateCount() {
+            const checkedBoxes = document.querySelectorAll(`${checkboxClass}:checked`);
+            const count = checkedBoxes.length;
+            
+            // Update count badge
+            countBadge.textContent = `(${count})`;
+            
+            // Enable or disable the button
+            actionButton.disabled = count === 0;
+        }
+        
+        // Add event listener to the "Select All" checkbox
+        selectAllCheckbox.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            
+            updateCount();
+        });
+        
+        // Add event listeners to individual checkboxes
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // If any checkbox is unchecked, uncheck "Select All"
+                if (!this.checked) {
+                    selectAllCheckbox.checked = false;
+                } 
+                // If all checkboxes are checked, check "Select All"
+                else if (document.querySelectorAll(`${checkboxClass}:not(:checked)`).length === 0) {
+                    selectAllCheckbox.checked = true;
+                }
+                
+                updateCount();
+            });
+        });
+        
+        // Initialize the count on page load
+        updateCount();
+        
+        // Form submission with loading state
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const checkedBoxes = document.querySelectorAll(`${checkboxClass}:checked`);
+                if (checkedBoxes.length === 0) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Show loading state
+                actionButton.disabled = true;
+                
+                // Set specific loading text based on button type
+                if (buttonId === 'processAiBtn') {
+                    actionButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                } else if (buttonId === 'deleteBtn') {
+                    actionButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

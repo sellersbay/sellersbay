@@ -1,0 +1,87 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Products - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Products</h1>
+        <a href="{{ path('app_product_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Product
+        </a>
+    </div>
+
+    {% if products is empty %}
+        <div class="alert alert-info">
+            <p class="mb-0">You haven't added any products yet. Click the "New Product" button to get started!</p>
+        </div>
+    {% else %}
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.shortDescription|default('No description')|slice(0, 100) ~ (product.shortDescription|default('No description')|length > 100 ? '...' : '') }}</td>
+                                    <td>
+                                        <span class="badge {% if product.status == 'draft' %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ product.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>{{ product.updatedAt|date('Y-m-d H:i') }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ path('app_product_edit', {id: product.id}) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            
+                                            <a href="{{ path('app_product_generate_content', {id: product.id}) }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-magic"></i> 
+                                                {% if product.aiGeneratedContent %}
+                                                    Regenerate
+                                                {% else %}
+                                                    Generate
+                                                {% endif %}
+                                            </a>
+
+                                            <form action="{{ path('app_product_delete', {id: product.id}) }}" 
+                                                  method="post" class="d-inline" 
+                                                  onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ product.id) }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.btn-group form { display: inline-block; }
+.btn-group .btn { margin-right: 2px; }
+</style>
+{% endblock %}

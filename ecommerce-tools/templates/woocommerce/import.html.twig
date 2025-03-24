@@ -1,0 +1,1562 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Import WooCommerce Products - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">Import Products</h1>
+                        <div>
+                            <a href="{{ path('app_woocommerce_dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    <div id="importProgress" class="d-none">
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-sync fa-spin"></i> <span id="progressTitle">Import in Progress</span>
+                            </h5>
+                            <div class="progress mt-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%">0%</div>
+                            </div>
+                            <p class="mt-2 mb-0">
+                                <span id="importStatus">Preparing to import products...</span>
+                            </p>
+                            <div class="d-flex justify-content-between mt-2">
+                                <span id="progressStats"></span>
+                                <div>
+                                    <button id="pauseImport" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-pause"></i> Pause
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 class="h4 mb-4">
+                        <i class="fas fa-store"></i> WooCommerce Products
+                    </h2>
+
+                    <div class="tab-content" id="productsTabContent">
+                        <!-- WooCommerce API Products Tab -->
+                        <div class="tab-pane fade show active" id="woocommerce-products" role="tabpanel" aria-labelledby="woocommerce-tab">
+                            <div id="wooFilterOptions" class="mb-4">
+                        <div class="row g-3">
+                                    <div class="col-md-1">
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="selectAll">
+                                            <label class="form-check-label" for="selectAll">
+                                                All
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" id="wooSearchInput" class="form-control" placeholder="Search products...">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select id="wooCategoryFilter" class="form-select">
+                                            <option value="">All Categories</option>
+                                            <!-- Categories will be populated via JavaScript -->
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button id="wooApplyFilters" class="btn btn-primary w-100">
+                                            <i class="fas fa-filter"></i> Filter
+                                        </button>
+                                    </div>
+                                    <!-- Division removed as per feedback -->
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <button type="button" id="deleteApiSelected" class="btn btn-danger" disabled>
+                                        <i class="fas fa-trash"></i> Delete Selected
+                                        <span id="apiSelectedDeleteCount">(0)</span>
+                                    </button>
+                                </div>
+                                <div>
+                                    <button type="button" id="importSelected" class="btn btn-primary" disabled>
+                                        <i class="fas fa-download"></i> Import Selected
+                                        <span id="selectedCount">(0)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive" style="display: block;">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px;"></th>
+                                            <th>WooCommerce ID</th>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th>Categories</th>
+                                            <th>Last Modified</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productsTableBody">
+                                        {# Products will be loaded via JavaScript #}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="downloadProductsContainer" class="text-center py-5">
+                                <div class="mb-4">
+                                    <i class="fas fa-cloud-download-alt fa-4x text-primary"></i>
+                                </div>
+                                <h3>Import Products from WooCommerce</h3>
+                                
+                                <!-- New workflow with two steps -->
+                                <div id="downloadSteps">
+                    <!-- Step 1: Download Categories -->
+                    <div id="step1Categories" class="mb-4">
+                        <p class="text-muted mb-2">First, download categories from your WooCommerce store:</p>
+                        <div class="d-flex gap-2">
+                            <button id="downloadCategoriesBtn" class="btn btn-primary">
+                                <i class="fas fa-tags"></i> Download Categories
+                            </button>
+                            <button id="forceCategoriesRefreshBtn" class="btn btn-outline-secondary" title="Force refresh from WooCommerce API">
+                                <i class="fas fa-sync"></i> Force Refresh
+                            </button>
+                        </div>
+                        <!-- Enhanced category download progress indicator -->
+                        <div id="categoryDownloadProgress" class="mt-3 d-none">
+                            <div class="alert alert-info">
+                                <h5 class="alert-heading d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <span id="categoryLoadingTitle">Downloading Categories</span>
+                                </h5>
+                                <div id="categoryLoadingMessage" class="mb-2">Loading categories...</div>
+                                <div class="progress">
+                                    <div id="categoryProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" style="width: 0%">0%</div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <small id="categoryProgressStats" class="text-muted"></small>
+                                    <small id="categoryProgressSource" class="badge bg-secondary">Checking database...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Select Categories -->
+                    <div id="step2SelectCategories" class="mb-4 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <p class="text-muted mb-0">Select which categories to import products from:</p>
+                            <span id="categoriesSourceBadge" class="badge bg-info">From Database</span>
+                        </div>
+                        <div id="categorySelectionContainer" class="mb-3 text-start" style="max-height: 500px; overflow-y: auto;">
+                            <!-- Categories will be loaded here -->
+                            <div class="text-center py-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading categories...</p>
+                            </div>
+                        </div>
+                        <div class="sticky-bottom py-3 bg-light border-top mt-3" style="position: sticky; bottom: 0; z-index: 100;">
+                            <button id="downloadProductsBtn" class="btn btn-lg btn-primary w-100" disabled>
+                                <i class="fas fa-cloud-download-alt"></i> Download Selected Categories
+                            </button>
+                        </div>
+                    </div>
+                                </div>
+                            </div>
+
+                            <div id="noProducts" class="text-center py-5 d-none">
+                                <div class="mb-4">
+                                    <i class="fas fa-box-open fa-4x text-muted"></i>
+                                </div>
+                                <h3>No Products Found</h3>
+                                <p class="text-muted">
+                                    No products were found in your WooCommerce store.
+                                </p>
+                            </div>
+                            
+                            <!-- Pagination controls -->
+                            <div id="paginationControls" class="d-none my-3">
+                                <nav aria-label="Products pagination">
+                                    <ul class="pagination justify-content-center">
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" id="paginationPrev">Previous</a>
+                                        </li>
+                                        <li class="page-item active">
+                                            <span class="page-link" id="currentPageDisplay">Page 1</span>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="#" id="paginationNext">Next</a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                                <p class="text-center text-muted"><small id="paginationInfo">Showing page 1 of 1</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate products modal -->
+<div class="modal fade" id="duplicateProductsModal" tabindex="-1" aria-labelledby="duplicateProductsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="duplicateProductsModalLabel">Duplicate Products</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>The following products were skipped because they already exist in your database:</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="duplicateProductsList">
+                            <!-- Duplicate products will be listed here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements - WooCommerce Products
+    const selectAll = document.getElementById('selectAll');
+    const importSelected = document.getElementById('importSelected');
+    const deleteApiSelected = document.getElementById('deleteApiSelected');
+    const selectedCount = document.getElementById('selectedCount');
+    const apiSelectedDeleteCount = document.getElementById('apiSelectedDeleteCount');
+    const productsTableBody = document.getElementById('productsTableBody');
+    const downloadProductsContainer = document.getElementById('downloadProductsContainer');
+    const noProducts = document.getElementById('noProducts');
+    const wooSearchInput = document.getElementById('wooSearchInput');
+    const wooCategoryFilter = document.getElementById('wooCategoryFilter');
+    const wooApplyFilters = document.getElementById('wooApplyFilters');
+    
+    // Progress elements
+    const importProgress = document.getElementById('importProgress');
+    const progressBar = importProgress.querySelector('.progress-bar');
+    const importStatus = document.getElementById('importStatus');
+    const progressTitle = document.getElementById('progressTitle');
+    const progressStats = document.getElementById('progressStats');
+    const pauseImport = document.getElementById('pauseImport');
+    
+    // New elements for pagination
+    const paginationControls = document.getElementById('paginationControls');
+    const paginationPrev = document.getElementById('paginationPrev');
+    const paginationNext = document.getElementById('paginationNext');
+    const currentPageDisplay = document.getElementById('currentPageDisplay');
+    const paginationInfo = document.getElementById('paginationInfo');
+    
+    // New elements for category workflow
+    const downloadCategoriesBtn = document.getElementById('downloadCategoriesBtn');
+    const step1Categories = document.getElementById('step1Categories');
+    const step2SelectCategories = document.getElementById('step2SelectCategories');
+    const categorySelectionContainer = document.getElementById('categorySelectionContainer');
+    const downloadProductsBtn = document.getElementById('downloadProductsBtn');
+    
+    // Modal elements
+    const duplicateProductsModal = new bootstrap.Modal(document.getElementById('duplicateProductsModal'));
+    const duplicateProductsList = document.getElementById('duplicateProductsList');
+    
+    // State variables
+    let products = [];
+    let allCategories = [];
+    let selectedCategories = [];
+    let currentPage = 1;
+    let totalPages = 0;
+    let totalProducts = 0;
+    let itemsPerPage = 15; // Default items per page
+    let isPaused = false;
+    let importInterval = null;
+    let operationType = ''; // 'import' or 'delete'
+    let isDownloading = false; // Track download state
+    let duplicateProducts = []; // Track duplicate products
+    
+    // Variables for operations
+    let selectedProductIds = [];
+    let currentOperationIndex = 0;
+    // Initialize pagination controls
+    function initPagination() {
+        paginationPrev.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentPage > 1) {
+                navigateToPage(currentPage - 1);
+            }
+        });
+        
+        paginationNext.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentPage < totalPages) {
+                navigateToPage(currentPage + 1);
+            }
+        });
+    }
+    
+    // Navigate to a specific page
+    function navigateToPage(page) {
+        if (page < 1 || page > totalPages || page === currentPage) return;
+        
+        currentPage = page;
+        updatePaginationDisplay();
+        renderPagedProducts();
+    }
+    
+    // Update pagination display
+    function updatePaginationDisplay() {
+        currentPageDisplay.textContent = `Page ${currentPage}`;
+        paginationInfo.textContent = `Showing page ${currentPage} of ${totalPages}`;
+        
+        // Update prev/next buttons
+        if (currentPage <= 1) {
+            paginationPrev.parentElement.classList.add('disabled');
+        } else {
+            paginationPrev.parentElement.classList.remove('disabled');
+        }
+        
+        if (currentPage >= totalPages) {
+            paginationNext.parentElement.classList.add('disabled');
+        } else {
+            paginationNext.parentElement.classList.remove('disabled');
+        }
+    }
+    
+    // Render products for current page
+    function renderPagedProducts() {
+        // Clear current table
+        productsTableBody.innerHTML = '';
+        
+        // Calculate start and end indices for current page
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, products.length);
+        
+        // Get products for current page
+        const pagedProducts = products.slice(startIndex, endIndex);
+        
+        // Render the products
+        renderProducts(pagedProducts);
+    }
+    // State for checking if we've already loaded products
+    let productsLoaded = false;
+    
+    // Hide the no products message initially
+    noProducts.classList.add('d-none');
+    
+    // Check for already staged products on page load
+    window.addEventListener('load', function() {
+        // Try to fetch staged products first
+        fetchStagedProducts();
+        
+        // Initialize pagination controls
+        initPagination();
+    });
+    
+    // New DOM elements for category workflow
+    const forceCategoriesRefreshBtn = document.getElementById('forceCategoriesRefreshBtn');
+    const categoryDownloadProgress = document.getElementById('categoryDownloadProgress');
+    const categoryLoadingMessage = document.getElementById('categoryLoadingMessage');
+    const categoriesSourceBadge = document.getElementById('categoriesSourceBadge');
+    
+    // Download categories button handler
+    downloadCategoriesBtn.addEventListener('click', function() {
+        fetchCategoriesFromAPI(false); // false = don't force refresh
+    });
+    
+    // Force refresh categories button handler
+    forceCategoriesRefreshBtn.addEventListener('click', function() {
+        fetchCategoriesFromAPI(true); // true = force refresh from API
+    });
+    
+    // Enhanced elements for category preloader
+    const categoryProgressBar = document.getElementById('categoryProgressBar');
+    const categoryLoadingTitle = document.getElementById('categoryLoadingTitle');
+    const categoryProgressStats = document.getElementById('categoryProgressStats');
+    const categoryProgressSource = document.getElementById('categoryProgressSource');
+    
+    // Fetch categories (either from database or API)
+    function fetchCategoriesFromAPI(forceRefresh = false) {
+        // Show loading indicator with initial state
+        categoryDownloadProgress.classList.remove('d-none');
+        categoryLoadingMessage.textContent = 'Loading categories...';
+        categoryProgressBar.style.width = '5%';
+        categoryProgressBar.textContent = '5%';
+        categoryProgressStats.textContent = 'Initializing...';
+        
+        // Set initial title and source indicators
+        if (forceRefresh) {
+            categoryLoadingTitle.textContent = 'Refreshing Categories';
+            categoryProgressSource.textContent = 'From API (Force Refresh)';
+            categoryProgressSource.className = 'badge bg-warning';
+        } else {
+            categoryLoadingTitle.textContent = 'Loading Categories';
+            categoryProgressSource.textContent = 'Checking Database...';
+            categoryProgressSource.className = 'badge bg-secondary';
+        }
+        
+        const url = new URL('{{ path('app_woocommerce_import') }}', window.location.origin);
+        url.searchParams.append('action', 'fetch_categories');
+        
+        // Add force_refresh parameter if needed
+        if (forceRefresh) {
+            url.searchParams.append('force_refresh', 'true');
+            categoryLoadingMessage.textContent = 'Refreshing categories from WooCommerce API...';
+            // Update progress to show we're starting the API call
+            categoryProgressBar.style.width = '15%';
+            categoryProgressBar.textContent = '15%';
+        } else {
+            categoryLoadingMessage.textContent = 'Checking for categories in database...';
+            // Update progress to show database check
+            categoryProgressBar.style.width = '25%';
+            categoryProgressBar.textContent = '25%';
+        }
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            // Show we received a response
+            categoryProgressBar.style.width = '60%';
+            categoryProgressBar.textContent = '60%';
+            categoryLoadingMessage.textContent = 'Processing category data...';
+            return response.json();
+        })
+        .then(data => {
+            // Update progress as we process the data
+            categoryProgressBar.style.width = '85%';
+            categoryProgressBar.textContent = '85%';
+            
+            if (data.success && data.categories && data.categories.length > 0) {
+                // Show final processing step
+                categoryLoadingMessage.textContent = `Processing ${data.categories.length} categories...`;
+                categoryProgressStats.textContent = `Found ${data.categories.length} categories`;
+                
+                allCategories = data.categories;
+                populateCategoryFilters(data.categories);
+                
+                // Show completion
+                categoryProgressBar.style.width = '100%';
+                categoryProgressBar.textContent = '100%';
+                
+                // Brief delay before hiding the progress
+                setTimeout(() => {
+                    // Hide loading indicator
+                    categoryDownloadProgress.classList.add('d-none');
+                    
+                    // Update the category selection UI
+                    displayCategorySelection(data.categories);
+                    
+                    // Update source badge
+                    if (data.source === 'database') {
+                        categoriesSourceBadge.textContent = 'From Database';
+                        categoriesSourceBadge.className = 'badge bg-info';
+                    } else {
+                        categoriesSourceBadge.textContent = 'From WooCommerce API';
+                        categoriesSourceBadge.className = 'badge bg-primary';
+                    }
+                    
+                    // Show success message
+                    const message = forceRefresh ? 
+                        `Successfully refreshed ${data.categories.length} categories from WooCommerce API.` :
+                        `Loaded ${data.categories.length} categories from ${data.source}.`;
+                    
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show';
+                    alert.innerHTML = `
+                        <strong>Success!</strong> ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('.card-body').prepend(alert);
+                }, 500);
+            } else {
+                // Update progress for error case
+                categoryProgressBar.style.width = '100%';
+                categoryProgressBar.textContent = '100%';
+                categoryProgressSource.className = 'badge bg-danger';
+                categoryProgressSource.textContent = 'Error';
+                
+                setTimeout(() => {
+                    // Hide loading indicator
+                    categoryDownloadProgress.classList.add('d-none');
+                    
+                    // Show error if no categories found
+                    const message = data.message || 'No categories found.';
+                    showError(message);
+                    
+                    // If no categories, still show empty selection UI
+                    displayCategorySelection([]);
+                }, 500);
+            }
+        })
+        .catch(error => {
+            // Update progress for error case
+            categoryProgressBar.style.width = '100%';
+            categoryProgressBar.textContent = '100%';
+            categoryProgressSource.className = 'badge bg-danger';
+            categoryProgressSource.textContent = 'Error';
+            categoryLoadingMessage.textContent = `Error: ${error.message}`;
+            
+            setTimeout(() => {
+                // Hide loading indicator after a delay
+                categoryDownloadProgress.classList.add('d-none');
+                
+                console.error('Error fetching categories:', error);
+                showError('Error loading categories: ' + error.message);
+                
+                // Show empty category selection on error
+                displayCategorySelection([]);
+            }, 1000);
+        });
+    }
+    
+    // Display category selection checkboxes
+    function displayCategorySelection(categories) {
+        // Hide step 1, show step 2
+        step1Categories.classList.add('d-none');
+        step2SelectCategories.classList.remove('d-none');
+        
+        // Clear existing content
+        categorySelectionContainer.innerHTML = '';
+        
+        if (categories.length === 0) {
+            categorySelectionContainer.innerHTML = '<div class="alert alert-warning">No categories found in your WooCommerce store.</div>';
+            return;
+        }
+        
+        // Add "Select All" checkbox
+        const selectAllDiv = document.createElement('div');
+        selectAllDiv.className = 'form-check mb-2';
+        selectAllDiv.innerHTML = `
+            <input class="form-check-input category-select-all" type="checkbox" id="categorySelectAll">
+            <label class="form-check-label fw-bold" for="categorySelectAll">
+                Select All Categories
+            </label>
+        `;
+        categorySelectionContainer.appendChild(selectAllDiv);
+        
+        // Add event listener to Select All checkbox
+        const selectAllCheckbox = selectAllDiv.querySelector('#categorySelectAll');
+        selectAllCheckbox.addEventListener('change', function() {
+            const allCheckboxes = categorySelectionContainer.querySelectorAll('.category-checkbox');
+            allCheckboxes.forEach(checkbox => checkbox.checked = this.checked);
+            updateCategorySelection();
+        });
+        
+        // Create a row for categories
+        const row = document.createElement('div');
+        row.className = 'row';
+        
+        // Add checkbox for each category
+        categories.forEach(category => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-2';
+            
+            const div = document.createElement('div');
+            div.className = 'form-check';
+            div.innerHTML = `
+                <input class="form-check-input category-checkbox" type="checkbox" value="${category}" id="category_${category.replace(/\s+/g, '_')}">
+                <label class="form-check-label" for="category_${category.replace(/\s+/g, '_')}">
+                    ${category}
+                </label>
+            `;
+            
+            col.appendChild(div);
+            row.appendChild(col);
+        });
+        
+        categorySelectionContainer.appendChild(row);
+        
+        // Add event listeners to category checkboxes
+        const categoryCheckboxes = categorySelectionContainer.querySelectorAll('.category-checkbox');
+        categoryCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateCategorySelection);
+        });
+        
+        // Initial update
+        updateCategorySelection();
+    }
+    
+    // Update selected categories array when checkboxes change
+    function updateCategorySelection() {
+        const checkboxes = categorySelectionContainer.querySelectorAll('.category-checkbox:checked');
+        selectedCategories = Array.from(checkboxes).map(checkbox => checkbox.value);
+        
+        // Update download button state
+        downloadProductsBtn.disabled = selectedCategories.length === 0;
+        
+        // Update select all checkbox
+        const selectAllCheckbox = document.getElementById('categorySelectAll');
+        const allCategoryCheckboxes = categorySelectionContainer.querySelectorAll('.category-checkbox');
+        
+        if (allCategoryCheckboxes.length === checkboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkboxes.length === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+    
+    // Function to fetch already staged products from database
+    function fetchStagedProducts() {
+        const url = new URL('{{ path('app_woocommerce_import') }}', window.location.origin);
+        url.searchParams.append('action', 'fetch_staged_products');
+        
+        // Show progress while fetching
+        importProgress.classList.remove('d-none');
+        progressTitle.textContent = 'Loading Products';
+        importStatus.textContent = 'Checking for stored products...';
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.products && data.products.length > 0) {
+                // Products found in database
+                console.log('Found staged products:', data.products.length);
+                productsLoaded = true;
+                products = data.products;
+                
+                // Show products but keep download container visible too
+                document.querySelector('.table-responsive').style.display = 'block';
+                
+                // Calculate total pages
+                totalProducts = products.length;
+                totalPages = Math.ceil(totalProducts / itemsPerPage);
+                
+                // Update pagination
+                updatePaginationDisplay();
+                
+                // Show pagination if needed
+                if (totalPages > 1) {
+                    paginationControls.classList.remove('d-none');
+                } else {
+                    paginationControls.classList.add('d-none');
+                }
+                
+                // Render the first page of products
+                renderPagedProducts();
+                
+                // Hide progress
+                importProgress.classList.add('d-none');
+            } else {
+                // No products found in database, show download button
+                console.log('No staged products found, showing download button');
+                downloadProductsContainer.classList.remove('d-none');
+                importProgress.classList.add('d-none');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching staged products:', error);
+            // On error, show download button
+            downloadProductsContainer.classList.remove('d-none');
+            importProgress.classList.add('d-none');
+        });
+    }
+    // Handle filter application - does client-side filtering only
+    wooApplyFilters.addEventListener('click', function() {
+        filterProductsClientSide();
+    });
+    
+    // State variables for tracking category processing
+    let currentCategoryIndex = 0;
+    let categoriesBeingProcessed = [];
+    
+    // Load products from WooCommerce API
+    function loadProducts(page = 1, categories = [], search = '') {
+        // If categories array is provided, store it for sequential processing
+        if (categories && categories.length > 0 && page === 1) {
+            categoriesBeingProcessed = [...categories];
+            currentCategoryIndex = 0;
+            console.log(`Starting to process ${categoriesBeingProcessed.length} categories: ${categoriesBeingProcessed.join(', ')}`);
+        }
+        
+        // Show progress bar
+        importProgress.classList.remove('d-none');
+        
+        // Set downloading state
+        isDownloading = true;
+        isPaused = false;
+        pauseImport.innerHTML = '<i class="fas fa-pause"></i> Pause';
+        
+        // If we're processing the first page, reset the UI
+        if (page === 1) {
+            if (currentCategoryIndex === 0) {
+                // Starting a new category set, clear everything
+                products = [];
+                productsTableBody.innerHTML = '';
+                
+                // Reset progress bar
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressTitle.textContent = 'Downloading Products';
+            }
+            
+            // Update status to show which category we're processing
+            if (categoriesBeingProcessed.length > 0) {
+                const categoryName = categoriesBeingProcessed[currentCategoryIndex];
+                const categoryProgress = `Category ${currentCategoryIndex + 1} of ${categoriesBeingProcessed.length}`;
+                importStatus.textContent = `Fetching products for category: ${categoryName} (${categoryProgress})`;
+                console.log(`Loading products for category: ${categoryName}`);
+            } else {
+                importStatus.textContent = 'Fetching products from your WooCommerce store...';
+            }
+        }
+        
+        // Build request URL
+        const url = new URL('{{ path('app_woocommerce_import') }}', window.location.origin);
+        url.searchParams.append('action', 'fetch_products');
+        url.searchParams.append('page', page);
+        url.searchParams.append('per_page', 50);
+        
+        // Add current category if we're processing categories
+        if (categoriesBeingProcessed.length > 0) {
+            const category = categoriesBeingProcessed[currentCategoryIndex];
+            url.searchParams.append('category', category);
+        }
+        
+        // Add search parameter if provided
+        if (search) {
+            url.searchParams.append('search', search);
+        }
+        
+        // If paused, don't continue
+        if (isPaused) {
+            console.log('Download paused. Click Resume to continue.');
+            return;
+        }
+        
+        console.log('Fetching products from URL:', url.toString());
+        
+        // Make the request
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log('API Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API Response data:', data);
+            if (data.success) {
+                // Update category filters if this is the first page of the first category
+                if (page === 1 && currentCategoryIndex === 0) {
+                    populateCategoryFilters(data.categories);
+                }
+                
+                // Handle empty results
+                if (data.products.length === 0) {
+                    console.log(`No products found for ${categoriesBeingProcessed[currentCategoryIndex]}`);
+                    
+                    // If we have more categories to process, move to the next one
+                    if (currentCategoryIndex < categoriesBeingProcessed.length - 1) {
+                        currentCategoryIndex++;
+                        console.log(`Moving to next category: ${categoriesBeingProcessed[currentCategoryIndex]}`);
+                        loadProducts(1, [], search); // Start with page 1 for the next category
+                        return;
+                    } else if (products.length === 0) {
+                        // If we've processed all categories and still have no products, show no products message
+                        noProducts.classList.remove('d-none');
+                        importProgress.classList.add('d-none');
+                        return;
+                    }
+                }
+                
+                // Add new products to our array
+                products = [...products, ...data.products];
+                
+                // Update pagination information
+                const currentCategoryTotal = parseInt(data.total, 10);
+                const currentCategoryPages = parseInt(data.totalPages, 10);
+                currentPage = parseInt(data.currentPage, 10);
+                
+                // Debug product count
+                console.log(`API returned ${data.products.length} products`);
+                
+                // Make sure products table is visible, but keep download container visible too
+                document.querySelector('.table-responsive').style.display = 'block';
+                
+                // Track any duplicate products
+                const duplicatesInBatch = data.products.filter(p => p.imported);
+                if (duplicatesInBatch.length > 0) {
+                    duplicateProducts = [...duplicateProducts, ...duplicatesInBatch];
+                    console.log(`Found ${duplicatesInBatch.length} duplicate products in this batch`);
+                }
+                
+                // Calculate overall progress - factoring in multiple categories
+                let totalProgress = 0;
+                if (categoriesBeingProcessed.length > 0) {
+                    // Factor in progress across all categories
+                    const categoryProgress = (currentPage / currentCategoryPages) * 100;
+                    const overallProgress = (
+                        (currentCategoryIndex + (categoryProgress / 100)) / 
+                        categoriesBeingProcessed.length
+                    ) * 100;
+                    totalProgress = Math.min(Math.round(overallProgress), 99); // Cap at 99% until complete
+                } else {
+                    // Simple progress for single downloads
+                    totalProgress = (currentPage / currentCategoryPages) * 100;
+                }
+                
+                // Update progress indicators
+                progressBar.style.width = `${totalProgress}%`;
+                progressBar.textContent = `${Math.round(totalProgress)}%`;
+                
+                if (categoriesBeingProcessed.length > 0) {
+                    // Show category-specific progress
+                    const categoryName = categoriesBeingProcessed[currentCategoryIndex];
+                    importStatus.textContent = `Downloading category ${currentCategoryIndex + 1}/${categoriesBeingProcessed.length}: ${categoryName}`;
+                    progressStats.textContent = `${products.length} products loaded in total`;
+                } else {
+                    // Generic progress info
+                    importStatus.textContent = `Loading products (${products.length} loaded so far)...`;
+                    progressStats.textContent = `Page ${currentPage} of ${currentCategoryPages}`;
+                }
+                
+                // Calculate UI pagination (separate from API pagination)
+                totalProducts = products.length;
+                totalPages = Math.ceil(totalProducts / itemsPerPage);
+                
+                // Update UI pagination display
+                if (totalPages > 1) {
+                    paginationControls.classList.remove('d-none');
+                    currentPage = 1; // Reset to first page for display
+                    updatePaginationDisplay();
+                }
+                
+                // Get actual count of new products added in this request
+                const newProductsCount = data.products.filter(p => !p.imported).length;
+                const duplicatesCount = data.products.filter(p => p.imported).length;
+                console.log(`API returned ${data.products.length} products (${newProductsCount} new, ${duplicatesCount} duplicates)`);
+                
+                // Render first page of products in the table
+                renderPagedProducts();
+                
+                // Check if we need to load more pages for this category
+                if (currentPage < currentCategoryPages) {
+                    // If not paused, load next page after a small delay
+                    if (!isPaused) {
+                        setTimeout(() => {
+                            if (!isPaused) { // Check again in case pause was clicked during timeout
+                                loadProducts(currentPage + 1, [], search);
+                            }
+                        }, 500);
+                    }
+                } else {
+                    console.log(`Finished loading category ${currentCategoryIndex + 1}: ${categoriesBeingProcessed[currentCategoryIndex]}`);
+                    
+                    // Check if we have more categories to process
+                    if (currentCategoryIndex < categoriesBeingProcessed.length - 1) {
+                        // Move to the next category
+                        currentCategoryIndex++;
+                        if (!isPaused) {
+                            setTimeout(() => {
+                                if (!isPaused) {
+                                    console.log(`Starting to load category ${currentCategoryIndex + 1}: ${categoriesBeingProcessed[currentCategoryIndex]}`);
+                                    loadProducts(1, [], search); // Start with page 1 for next category
+                                }
+                            }, 500);
+                        }
+                    } else {
+                        // All categories are processed
+                        // Count non-duplicate products (ones that weren't already imported)
+                        const uniqueProductsCount = products.filter(p => !p.imported).length;
+                        console.log('All categories processed. Total unique products:', uniqueProductsCount);
+                        
+                        // Update the main category filter with all category data
+                        populateCategoryFilters(allCategories);
+                        
+                        // Finish up the process
+                        setTimeout(() => {
+                            // Mark download as complete
+                            importProgress.classList.add('d-none');
+                            isDownloading = false;
+                            
+                            // Save to session storage for caching
+                            saveProductsToSessionStorage();
+                            
+                            // Show duplicate products modal if needed
+                            if (duplicateProducts.length > 0) {
+                                console.log(`Showing modal with ${duplicateProducts.length} duplicate products`);
+                                showDuplicateProductsModal(duplicateProducts);
+                            }
+                            
+                            // Final UI updates
+                            if (products.length === 0) {
+                                downloadProductsContainer.style.display = 'block';
+                                noProducts.classList.remove('d-none');
+                            } else {
+                                noProducts.classList.add('d-none');
+                            }
+                            
+                            // Ensure category selection remains visible
+                            step2SelectCategories.classList.remove('d-none');
+                            
+                            // Show a success message with accurate counts
+                            const uniqueCount = products.filter(p => !p.imported).length;
+                            const duplicateCount = duplicateProducts.length;
+                            const alert = document.createElement('div');
+                            alert.className = 'alert alert-success alert-dismissible fade show';
+                            alert.innerHTML = `
+                                <strong>Success!</strong> Downloaded ${uniqueCount} products from ${categoriesBeingProcessed.length} categories.
+                                ${duplicateCount > 0 ? `<br>${duplicateCount} duplicate products were skipped.` : ''}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            `;
+                            document.querySelector('.card-body').prepend(alert);
+                        }, 1000);
+                    }
+                }
+            } else {
+                showError(data.message || 'Failed to load products');
+                importProgress.classList.add('d-none');
+                // Show download button again in case of error
+                downloadProductsContainer.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            const errorMsg = `Error loading products: ${error.message}`;
+            console.error(errorMsg);
+            showError(errorMsg);
+            
+            // Try to continue with next category if possible
+            if (categoriesBeingProcessed.length > 0 && currentCategoryIndex < categoriesBeingProcessed.length - 1) {
+                currentCategoryIndex++;
+                setTimeout(() => {
+                    if (!isPaused) {
+                        console.log(`Skipping to next category after error: ${categoriesBeingProcessed[currentCategoryIndex]}`);
+                        loadProducts(1, [], search);
+                    }
+                }, 1000);
+            } else {
+                // Can't continue, show error state
+                importProgress.classList.add('d-none');
+                isDownloading = false;
+                downloadProductsContainer.style.display = 'block';
+            }
+        });
+    }
+        
+    // Show duplicate products modal
+    function showDuplicateProductsModal(duplicates) {
+        // Clear the list
+        duplicateProductsList.innerHTML = '';
+        
+        // Add each duplicate product
+        duplicates.forEach(product => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${product.id}</td>
+                <td>${product.name}</td>
+            `;
+            duplicateProductsList.appendChild(row);
+        });
+        
+        // Show the modal
+        duplicateProductsModal.show();
+    }
+    
+    // Populate category filters
+    function populateCategoryFilters(categories) {
+        if (!categories || categories.length === 0) return;
+        
+        // Clear existing options first (except the first one)
+        while (wooCategoryFilter.options.length > 1) {
+            wooCategoryFilter.remove(1);
+        }
+        
+        // Add new options
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            wooCategoryFilter.appendChild(option);
+        });
+    }
+    
+    // Render products in the table
+    function renderProducts(productsList) {
+        console.log('Rendering products:', productsList ? productsList.length : 0);
+        if (!productsList || productsList.length === 0) {
+            if (productsTableBody.children.length === 0) {
+                noProducts.classList.remove('d-none');
+            }
+            return;
+        }
+        
+        // Hide no products message
+        noProducts.classList.add('d-none');
+        
+        // Ensure table is visible
+        document.querySelector('.table-responsive').style.display = 'block';
+        productsList.forEach(product => {
+            // Check if product has already been imported (but still show it)
+            const isImported = product.hasOwnProperty('imported') && product.imported;
+            
+            const tr = document.createElement('tr');
+            
+            // Get the entity ID if available (for database operations)
+            const entityId = product.entity_id || '';
+            
+            tr.innerHTML = `
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input product-checkbox" type="checkbox" 
+                               value="${product.id}" id="product_${product.id}" 
+                               data-entity-id="${entityId}">
+                    </div>
+                </td>
+                <td>${product.id}${isImported ? ' <span class="badge bg-info">Downloaded</span>' : ''}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        ${product.images && product.images.length > 0 ? 
+                         `<img src="${product.images[0].src}" alt="${product.name}" class="mr-2" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">` : 
+                         '<div class="bg-light text-center" style="width: 40px; height: 40px; line-height: 40px; margin-right: 10px;"><i class="fas fa-image text-muted"></i></div>'}
+                        <div>
+                            <div>${product.name}</div>
+                            <small class="text-muted">${product.slug}</small>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge ${product.status === 'publish' ? 'bg-success' : 'bg-secondary'}">${product.status}</span></td>
+                <td>
+                    ${product.categories && product.categories.length > 0 ? 
+                      product.categories.map(cat => `<span class="badge bg-info">${cat.name}</span>`).join(' ') : 
+                      '<span class="text-muted">No categories</span>'}
+                </td>
+                <td>${new Date(product.date_modified).toLocaleDateString()}</td>
+            `;
+            
+            productsTableBody.appendChild(tr);
+        });
+        
+        // Add event listeners to checkboxes
+        document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedCount);
+        });
+        
+        // Check if all products were filtered out and show empty state
+        if (productsTableBody.querySelectorAll('tr').length === 0) {
+            noProducts.classList.remove('d-none');
+        } else {
+            noProducts.classList.add('d-none');
+        }
+    }
+    
+    // Show error message
+    function showError(message) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show';
+        alert.innerHTML = `
+            <strong>Error!</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.querySelector('.card-body').prepend(alert);
+    }
+    
+    // Handle select all checkbox
+    selectAll.addEventListener('change', function() {
+        const checkboxes = productsTableBody.querySelectorAll('input[type="checkbox"]:not([disabled])');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        updateSelectedCount();
+    });
+    
+    // Update selected count and button states
+    function updateSelectedCount() {
+        const checked = productsTableBody.querySelectorAll('input[type="checkbox"]:checked');
+        selectedCount.textContent = `(${checked.length})`;
+        apiSelectedDeleteCount.textContent = `(${checked.length})`;
+        importSelected.disabled = checked.length === 0;
+        deleteApiSelected.disabled = checked.length === 0;
+    }
+    
+    // Handle pause/resume button
+    pauseImport.addEventListener('click', function() {
+        // Only allow pause/resume if we're actively downloading
+        if (isDownloading) {
+            isPaused = !isPaused;
+            
+            if (isPaused) {
+                this.innerHTML = '<i class="fas fa-play"></i> Resume';
+                clearInterval(importInterval);
+            } else {
+                this.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                
+                // Resume the appropriate operation
+                if (operationType === 'import') {
+                    startImportProcess();
+                } else {
+                    // If we were in the middle of downloading products, restart from where we left off
+                    const category = selectedCategories.length > 0 ? selectedCategories[0] : '';
+                    const search = wooSearchInput.value.trim();
+                    loadProducts(currentPage, [category], search);
+                }
+            }
+        }
+    });
+    
+    // Handle import process
+    importSelected.addEventListener('click', function() {
+        const checked = productsTableBody.querySelectorAll('input[type="checkbox"]:checked');
+        if (checked.length === 0) return;
+        
+        // Collect selected product IDs - we need entity IDs for database operations
+        selectedProductIds = Array.from(checked).map(checkbox => checkbox.dataset.entityId || checkbox.value);
+        currentOperationIndex = 0;
+        operationType = 'import';
+        
+        // Set downloading state
+        isDownloading = true;
+        isPaused = false;
+        
+        // Show progress bar
+        progressTitle.textContent = 'Import in Progress';
+        importStatus.textContent = 'Starting import...';
+        importProgress.classList.remove('d-none');
+        pauseImport.classList.remove('d-none');
+        document.getElementById('woocommerce-products').style.opacity = '0.5';
+        
+        // Reset progress bar
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+        
+        // Start import process
+        startImportProcess();
+    });
+    
+    // Start the import process
+    function startImportProcess() {
+        // Process in batches to avoid overwhelming the server
+        const batchSize = 5;
+        
+        // Set operation state
+        isDownloading = true;
+        
+        importInterval = setInterval(() => {
+            if (isPaused) return;
+            // Calculate batch endpoints
+            const start = currentOperationIndex;
+            const end = Math.min(currentOperationIndex + batchSize, selectedProductIds.length);
+            const batchIds = selectedProductIds.slice(start, end);
+            
+            if (batchIds.length === 0) {
+                // All products imported, now update their status to mark as imported
+                clearInterval(importInterval);
+                importStatus.textContent = 'Finalizing import...';
+                progressBar.style.width = '90%';
+                progressBar.textContent = '90%';
+                
+                // Create form data for download/status update
+                const formData = new FormData();
+                
+                // Add each product ID individually
+                selectedProductIds.forEach((id, index) => {
+                    formData.append(`product_ids[${index}]`, id);
+                });
+                
+                // Trigger download action to update product status from staged to imported
+                fetch('{{ path('app_woocommerce_download') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Import and status update completed
+                    importStatus.textContent = 'Import completed successfully!';
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                    
+                    // Show success message instead of redirecting
+                    setTimeout(() => {
+                        // Hide progress and restore UI
+                        importProgress.classList.add('d-none');
+                        document.getElementById('woocommerce-products').style.opacity = '1';
+                        
+                        // Show success message
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-success alert-dismissible fade show';
+                        alert.innerHTML = `
+                            <strong>Success!</strong> ${selectedProductIds.length} products have been imported successfully.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        document.querySelector('.card-body').prepend(alert);
+                        
+                // Refresh the product list - removing imported products
+                fetchStagedProducts();
+                
+                // Also remove imported products from the UI
+                for (let i = checked.length - 1; i >= 0; i--) {
+                    const row = checked[i].closest('tr');
+                    row.remove();
+                }
+                
+                // Update remaining product counts
+                updateSelectedCount();
+                    }, 1500);
+                })
+                .catch(error => {
+                    showError('Error finalizing import: ' + error.message);
+                    
+                    // Still complete the process and restore UI
+                    setTimeout(() => {
+                        importProgress.classList.add('d-none');
+                        document.getElementById('woocommerce-products').style.opacity = '1';
+                        
+                        // Refresh the product list
+                        fetchStagedProducts();
+                    }, 2000);
+                });
+                
+                return;
+            }
+            
+            // Update progress display
+            const progress = (currentOperationIndex / selectedProductIds.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressBar.textContent = `${Math.round(progress)}%`;
+            importStatus.textContent = `Importing products ${currentOperationIndex + 1}-${end} of ${selectedProductIds.length}...`;
+            progressStats.textContent = `Products processed: ${currentOperationIndex} of ${selectedProductIds.length}`;
+            
+            // Send batch to server
+            fetch('{{ path('app_woocommerce_import') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    'action': 'import_products',
+                    'product_ids': JSON.stringify(batchIds)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store the newly created database entity IDs if they're in the response
+                    if (data.importedProducts && Array.isArray(data.importedProducts)) {
+                        console.log('Successfully imported products:', data.importedProducts);
+                        // Update our selectedProductIds with any entity IDs returned
+                        data.importedProducts.forEach(product => {
+                            if (product.woocommerceId && product.entityId) {
+                                // Find the index in our selected array
+                                const index = selectedProductIds.findIndex(id => 
+                                    id.toString() === product.woocommerceId.toString());
+                                if (index !== -1) {
+                                    selectedProductIds[index] = product.entityId.toString();
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    showError(data.message || 'Failed to import batch');
+                    clearInterval(importInterval);
+                }
+            })
+            .catch(error => {
+                showError('Error importing products: ' + error.message);
+                clearInterval(importInterval);
+            });
+            
+            // Move to next batch
+            currentOperationIndex = end;
+            
+        }, 1000);
+    }
+    
+    // Handle API products deletion
+    deleteApiSelected.addEventListener('click', function() {
+        const checked = productsTableBody.querySelectorAll('input[type="checkbox"]:checked');
+        if (checked.length === 0) return;
+        
+        if (!confirm(`Are you sure you want to remove ${checked.length} selected products from the list?`)) {
+            return;
+        }
+        
+        // Show progress while deleting
+        importProgress.classList.remove('d-none');
+        progressTitle.textContent = 'Deleting Products';
+        importStatus.textContent = 'Removing selected products...';
+        progressBar.style.width = '50%';
+        progressBar.textContent = '50%';
+        
+        // Collect IDs of products to remove - these should be entity IDs
+        const productIdsToRemove = [];
+        
+        // Get entity IDs from data attributes or use WooCommerce IDs as fallback
+        for (const checkbox of checked) {
+            // Try to get database entity ID first (from data attribute)
+            if (checkbox.dataset.entityId) {
+                productIdsToRemove.push(checkbox.dataset.entityId);
+            } else {
+                // Fallback to regular ID (WooCommerce ID)
+                productIdsToRemove.push(checkbox.value);
+            }
+        }
+        
+        console.log('Deleting products with IDs:', productIdsToRemove);
+        
+        // Create form data
+        const formData = new FormData();
+        
+        // Add each product ID individually as the backend expects an array of IDs
+        productIdsToRemove.forEach((id, index) => {
+            formData.append(`product_ids[${index}]`, id);
+        });
+        
+        // Send deletion request to server
+        fetch('{{ path('app_woocommerce_delete') }}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => {
+            // First check if response is ok
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+            }
+            
+            // Try to parse as JSON
+            return response.text().then(text => {
+                try {
+                    // Check if the response is actually JSON
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If not JSON, throw an error with the response text
+                    console.error('Non-JSON response:', text);
+                    throw new Error('Server returned an invalid response format');
+                }
+            });
+        })
+        .then(data => {
+            if (data && data.success) {
+                // Server-side deletion successful, now update UI
+                // Remove selected products from display
+                for (let i = checked.length - 1; i >= 0; i--) {
+                    const row = checked[i].closest('tr');
+                    row.remove();
+                }
+                
+                // Remove from memory array
+                const idsSet = new Set(productIdsToRemove.map(id => id.toString()));
+                products = products.filter(product => !idsSet.has(product.id.toString()));
+                
+                // Update UI
+                updateSelectedCount();
+                
+                // Show empty state if all products were removed
+                if (productsTableBody.querySelectorAll('tr').length === 0) {
+                    noProducts.classList.remove('d-none');
+                }
+                
+                // Show success message
+                const message = data.message || `${productIdsToRemove.length} products deleted successfully.`;
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    <strong>Success!</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.querySelector('.card-body').prepend(alert);
+            } else {
+                // Show error
+                showError(data.message || 'Failed to delete products.');
+            }
+            
+            // Hide progress
+            importProgress.classList.add('d-none');
+        })
+        .catch(error => {
+            // Show error
+            showError('Error deleting products: ' + error.message);
+            importProgress.classList.add('d-none');
+        });
+    });
+    
+    // Add helper function to populate categories
+    function populateCategoriesFromProducts(productsList) {
+        const categories = new Set();
+        productsList.forEach(product => {
+            if (product.categories && product.categories.length > 0) {
+                product.categories.forEach(category => {
+                    categories.add(category.name);
+                });
+            }
+        });
+        
+        // Clear existing options first (except the first one)
+        while (wooCategoryFilter.options.length > 1) {
+            wooCategoryFilter.remove(1);
+        }
+        
+        // Add new options
+        Array.from(categories).sort().forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            wooCategoryFilter.appendChild(option);
+        });
+    }
+    
+    // Handle download button click
+    downloadProductsBtn.addEventListener('click', function() {
+        console.log('Download button clicked, selected categories:', selectedCategories);
+        
+        // If there are selected categories, start the download process
+        if (selectedCategories.length > 0) {
+            // Show progress but keep category selection visible
+            importProgress.classList.remove('d-none');
+            
+            // Reset products array and UI
+            products = [];
+            productsTableBody.innerHTML = '';
+            duplicateProducts = [];
+            
+            // Set downloading state
+            isDownloading = true;
+            isPaused = false;
+            pauseImport.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            
+            // Reset progress indicators
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            progressTitle.textContent = 'Downloading Products';
+            importStatus.textContent = 'Starting download for selected categories...';
+            
+            // Show message about which categories are being downloaded
+            const categoryList = selectedCategories.join(', ');
+            console.log('Downloading products for categories:', categoryList);
+            
+                // Start loading products with ALL selected categories
+                loadProducts(1, selectedCategories, '');
+        } else {
+            showError('Please select at least one category to download products from.');
+        }
+    });
+    
+    // Client-side filtering - simplified with no progress display
+    function filterProductsClientSide() {
+        const searchTerm = wooSearchInput.value.toLowerCase();
+        const selectedCategory = wooCategoryFilter.value.toLowerCase();
+        
+        // Filter products without clearing the products array
+        const filteredProducts = products.filter(product => {
+            // Filter by search term
+            const matchesSearch = !searchTerm || 
+                (product.name && product.name.toLowerCase().includes(searchTerm)) ||
+                (product.description && product.description.toLowerCase().includes(searchTerm)) ||
+                (product.short_description && product.short_description.toLowerCase().includes(searchTerm));
+            
+            // Filter by category
+            const matchesCategory = !selectedCategory || 
+                (product.categories && Array.isArray(product.categories) && 
+                    product.categories.some(cat => 
+                        cat && cat.name && cat.name.toLowerCase() === selectedCategory
+                    )
+                );
+            
+            return matchesSearch && matchesCategory;
+        });
+        
+        console.log('Filtered products:', filteredProducts.length);
+        
+        // Update pagination for filtered products
+        totalProducts = filteredProducts.length;
+        totalPages = Math.ceil(totalProducts / itemsPerPage);
+        currentPage = 1;
+        
+        // Update pagination display
+        updatePaginationDisplay();
+        
+        // Show or hide pagination controls
+        if (totalPages > 1) {
+            paginationControls.classList.remove('d-none');
+        } else {
+            paginationControls.classList.add('d-none');
+        }
+        
+        // Clear table and render filtered products for the first page
+        productsTableBody.innerHTML = '';
+        
+        // Render first page of filtered products
+        const startIndex = 0;
+        const endIndex = Math.min(itemsPerPage, filteredProducts.length);
+        renderProducts(filteredProducts.slice(startIndex, endIndex));
+        
+        // Show no products message if no results
+        if (filteredProducts.length === 0) {
+            noProducts.classList.remove('d-none');
+        } else {
+            noProducts.classList.add('d-none');
+        }
+    }
+    
+    // Handle filter button click
+    wooApplyFilters.addEventListener('click', function() {
+        filterProductsClientSide();
+    });
+    
+    /* Removed show imported toggle handler */
+    
+    // Save products to session storage for caching
+    function saveProductsToSessionStorage() {
+        try {
+            sessionStorage.setItem('woocommerce_products', JSON.stringify(products));
+        } catch (e) {
+            console.error('Error saving products to session storage:', e);
+        }
+    }
+});
+</script>
+{% endblock %}

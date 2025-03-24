@@ -1,0 +1,1251 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Credit Packages - Admin - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .admin-nav .nav-link {
+            color: #4e73df;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .admin-nav .nav-link:hover {
+            background-color: #eaecf4;
+        }
+        
+        .admin-nav .nav-link.active {
+            background-color: #4e73df;
+            color: white;
+        }
+        
+        .admin-nav .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        .stats-card {
+            border-left: 4px solid #4e73df;
+            transition: transform 0.2s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card.plans { border-left-color: #1cc88a; }
+        .stats-card.sales { border-left-color: #f6c23e; }
+        .stats-card.revenue { border-left-color: #36b9cc; }
+        
+        .package-card {
+            border: 1px solid #e3e6f0;
+            border-radius: 0.35rem;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+        }
+        
+        .package-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .package-card.featured {
+            border: 2px solid #1cc88a;
+            position: relative;
+        }
+        
+        .package-card.featured::before {
+            content: 'Recommended';
+            position: absolute;
+            top: -12px;
+            right: 10px;
+            background-color: #1cc88a;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .edit-package-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        
+        .package-card:hover .edit-package-btn {
+            opacity: 1;
+        }
+        
+        .promo-badge {
+            background-color: #e74a3b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0 text-gray-800">One-Time Credit Packages</h1>
+            <p class="text-muted">Manage credit packages, pricing, and monitor sales.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Admin Navigation Sidebar -->
+        <div class="col-xl-3 col-lg-4 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Admin Navigation</h6>
+                </div>
+                <div class="card-body">
+                    <div class="admin-nav">
+                        <a href="{{ path('app_admin_dashboard') }}" class="nav-link">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        <a href="{{ path('app_admin_users') }}" class="nav-link">
+                            <i class="fas fa-users"></i> User Management
+                        </a>
+                        <a href="{{ path('app_admin_products') }}" class="nav-link">
+                            <i class="fas fa-box"></i> Product Management
+                        </a>
+                        <a href="{{ path('app_admin_credits') }}" class="nav-link">
+                            <i class="fas fa-coins"></i> Credits Management
+                        </a>
+                        <a href="{{ path('app_admin_subscriptions') }}" class="nav-link">
+                            <i class="fas fa-receipt"></i> Subscription Plans
+                        </a>
+                        <a href="{{ path('app_admin_credit_packages') }}" class="nav-link active">
+                            <i class="fas fa-shopping-cart"></i> Credit Packages
+                        </a>
+                        <a href="{{ path('app_admin_statistics') }}" class="nav-link">
+                            <i class="fas fa-chart-bar"></i> System Statistics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                            <i class="fas fa-plus"></i> Create New Package
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#packagePromotionModal">
+                            <i class="fas fa-tags"></i> Create Promotion
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#packageSettingsModal">
+                            <i class="fas fa-cog"></i> Package Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="col-xl-9 col-lg-8">
+            <!-- Stats Cards Row -->
+            <div class="row mb-4">
+                <!-- Packages Count Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card plans">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Active Packages</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ packageAddOns|filter(p => p.active)|length }}</div>
+                                    <div class="text-xs text-muted">
+                                        <i class="fas fa-check-circle me-1"></i>All packages operational
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-shopping-basket fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card sales">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Sales</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ packageAddOns|reduce((sum, package) => sum + (package.sales ?? 0), 0) }}
+                                    </div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>12% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card revenue">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Revenue</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">${{ packageAddOns|reduce((sum, package) => sum + (package.price_standard * (package.sales ?? 0)), 0)|number_format(2) }}</div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>9.5% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- One-Time Credit Packages -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">One-Time Credit Packages</h6>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                        <i class="fas fa-plus"></i> New Package
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> These are one-time purchase credit packages. Users with active subscriptions can purchase these for additional credits.
+                    </div>
+                    <div class="row">
+                        {% for package in packageAddOns|default([]) %}
+                            <div class="col-lg-4 mb-4">
+                                <div class="card h-100 package-card {% if package.featured %}featured{% endif %}">
+                                    <button class="btn btn-sm btn-link edit-package-btn" data-bs-toggle="modal" data-bs-target="#editPackageModal" data-package-id="{{ package.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-4">{{ package.name }}</h3>
+                                        <div class="pricing mb-4">
+                                            {% if package.discount is not null and package.discount > 0 %}
+                                                <div class="promo-badge">SALE -{{ package.discount }}%</div>
+                                                <div class="text-muted text-decoration-line-through">${{ package.original_price_standard|default(package.price_standard)|number_format(2) }}</div>
+                                            {% endif %}
+                                            <div class="h1 mb-0">${{ package.price_standard|number_format(2) }}</div>
+                                            <div class="text-muted">standard price</div>
+                                            <div class="h5 mt-2">${{ package.price_premium|number_format(2) }}</div>
+                                            <div class="text-muted">premium price</div>
+                                        </div>
+                                        <div class="features-badge mb-4">
+                                            <span class="badge bg-warning p-2">
+                                                <i class="fas fa-coins"></i>
+                                                {{ package.credits }} Credits
+                                            </span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-4">
+                                            <span class="text-muted">
+                                                <i class="fas fa-shopping-cart me-1"></i> {{ package.sales|default(0) }} purchases
+                                            </span>
+                                            <span class="text-muted">
+                                                Standard: ${{ package.per_credit_price_standard|number_format(2) }}/credit
+                                            </span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">
+                                                Premium: ${{ package.per_credit_price_premium|number_format(2) }}/credit
+                                            </span>
+                                            <span class="badge {% if package.active %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ package.active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent d-flex justify-content-between">
+                                        <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#packageStatsModal" data-package-id="{{ package.id }}">
+                                            <i class="fas fa-chart-bar"></i> Stats
+                                        </button>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="package{{ package.id }}Active" {% if package.active %}checked{% endif %}>
+                                            <label class="form-check-label" for="package{{ package.id }}Active">
+                                                Active
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i> No credit packages found. Click the "New Package" button to create one.
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Package Sales -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Package Sales</h6>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-file-export"></i> Export Data
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Package</th>
+                                            <th>Date</th>
+                                            <th>Price</th>
+                                            <th>Credits</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <a href="#">John Smith</a>
+                                                <div class="small text-muted">john.smith@example.com</div>
+                                            </td>
+                                            <td>Pro Package</td>
+                                            <td>2023-12-10</td>
+                                            <td>$99.00</td>
+                                            <td>100</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <a href="#">Sarah Johnson</a>
+                                                <div class="small text-muted">sarah.j@example.com</div>
+                                            </td>
+                                            <td>Starter Package</td>
+                                            <td>2023-12-05</td>
+                                            <td>$49.00</td>
+                                            <td>50</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <a href="#">Robert Brown</a>
+                                                <div class="small text-muted">r.brown@example.com</div>
+                                            </td>
+                                            <td>Large Package</td>
+                                            <td>2023-12-01</td>
+                                            <td>$199.00</td>
+                                            <td>250</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light mb-4">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">Package Sales Overview</h6>
+                                    <div class="mb-4">
+                                        <div class="small fw-bold mb-1">Package Distribution</div>
+                                        <div class="progress mb-2" style="height: 10px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: 30%;" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: 45%;" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <div class="progress-bar bg-warning" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small text-muted">
+                                            <div>
+                                                <i class="fas fa-circle text-primary"></i> Small (30%)
+                                            </div>
+                                            <div>
+                                                <i class="fas fa-circle text-success"></i> Medium (45%)
+                                            </div>
+                                            <div>
+                                                <i class="fas fa-circle text-warning"></i> Large (25%)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="small fw-bold mb-1">Sales Trend</div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="display-4 me-3">+18%</div>
+                                            <div class="text-success">
+                                                <i class="fas fa-arrow-up me-1"></i>
+                                                <span class="text-success">3.2%</span>
+                                                <div class="small text-muted">from last month</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Create Package Modal -->
+<div class="modal fade" id="createPackageModal" tabindex="-1" aria-labelledby="createPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPackageModalLabel">Create New Credit Package</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createPackageForm" action="{{ path('app_admin_create_package_addon') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('create_package') }}">
+                    <div class="mb-3">
+                        <label for="packageName" class="form-label">Package Name</label>
+                        <input type="text" class="form-control" id="packageName" name="packageName" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="packagePriceStandard" class="form-label">Standard Price (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="packagePriceStandard" name="packagePriceStandard" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packagePricePremium" class="form-label">Premium Price (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="packagePricePremium" name="packagePricePremium" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="packageCredits" class="form-label">Credits</label>
+                        <input type="number" class="form-control" id="packageCredits" name="packageCredits" min="1" required>
+                        <small class="form-text text-muted">Number of credits the user will receive</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="packageDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="packageDescription" name="packageDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="packageDiscount" class="form-label">Discount (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="packageDiscount" name="packageDiscount" min="0" max="100" value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packageDisplayOrder" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="packageDisplayOrder" name="packageDisplayOrder" min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="packageStripeID" class="form-label">Stripe Product ID</label>
+                        <input type="text" class="form-control" id="packageStripeID" name="packageStripeID">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="packageIsFeatured" name="packageIsFeatured">
+                        <label class="form-check-label" for="packageIsFeatured">
+                            Feature this package (Recommended)
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="packageIsActive" name="packageIsActive" checked>
+                        <label class="form-check-label" for="packageIsActive">
+                            Package is active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveNewPackageBtn" onclick="document.getElementById('createPackageForm').submit()">Create Package</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div class="modal fade" id="editPackageModal" tabindex="-1" aria-labelledby="editPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPackageModalLabel">Edit Credit Package</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPackageForm" action="{{ path('app_admin_edit_package_addon', {'id': 'placeholder'}) }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('edit_package') }}">
+                    <input type="hidden" id="editPackageId" name="id">
+                    <div class="mb-3">
+                        <label for="editPackageName" class="form-label">Package Name</label>
+                        <input type="text" class="form-control" id="editPackageName" name="editPackageName" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editPackagePriceStandard" class="form-label">Standard Price (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editPackagePriceStandard" name="editPackagePriceStandard" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPackagePricePremium" class="form-label">Premium Price (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editPackagePricePremium" name="editPackagePricePremium" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPackageCredits" class="form-label">Credits</label>
+                        <input type="number" class="form-control" id="editPackageCredits" name="editPackageCredits" min="1" required>
+                        <small class="form-text text-muted">Number of credits the user will receive</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPackageDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editPackageDescription" name="editPackageDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editPackageDiscount" class="form-label">Discount (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editPackageDiscount" name="editPackageDiscount" min="0" max="100" value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPackageDisplayOrder" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="editPackageDisplayOrder" name="editPackageDisplayOrder" min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="editPackageStripeID" class="form-label">Stripe Product ID</label>
+                            <input type="text" class="form-control" id="editPackageStripeID" name="editPackageStripeID">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editPackageStripePriceStandard" class="form-label">Stripe Price ID (Standard)</label>
+                            <input type="text" class="form-control" id="editPackageStripePriceStandard" name="editPackageStripePriceStandard">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPackageStripePricePremium" class="form-label">Stripe Price ID (Premium)</label>
+                            <input type="text" class="form-control" id="editPackageStripePricePremium" name="editPackageStripePricePremium">
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editPackageIsFeatured" name="editPackageIsFeatured">
+                        <label class="form-check-label" for="editPackageIsFeatured">
+                            Feature this package (Recommended)
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editPackageIsActive" name="editPackageIsActive" checked>
+                        <label class="form-check-label" for="editPackageIsActive">
+                            Package is active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger me-auto" id="deletePackageBtn" onclick="submitDeletePackageForm()">Delete Package</button>
+                <button type="button" class="btn btn-primary" id="savePackageChangesBtn" onclick="document.getElementById('editPackageForm').submit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Package Stats Modal -->
+<div class="modal fade" id="packageStatsModal" tabindex="-1" aria-labelledby="packageStatsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="packageStatsModalLabel">Package Statistics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="packageStatsTitle">Pro Package</h4>
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Total Sales</h6>
+                                <div class="h3 mb-0">78</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Total Revenue</h6>
+                                <div class="h3 mb-0">$7,722.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Conversion Rate</h6>
+                                <div class="h3 mb-0">8.4%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Credits Issued</h6>
+                                <div class="h3 mb-0">7,800</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8 mb-4">
+                        <h6 class="small font-weight-bold text-uppercase mb-3">Sales Trend</h6>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="packageSalesChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <h6 class="small font-weight-bold text-uppercase mb-3">Recent Purchases</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2023-12-10</td>
+                                        <td>John S.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-12-08</td>
+                                        <td>Emma W.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-12-05</td>
+                                        <td>Robert B.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-11-28</td>
+                                        <td>James T.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-11-27</td>
+                                        <td>Lisa M.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Export Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Package Promotion Modal -->
+<div class="modal fade" id="packagePromotionModal" tabindex="-1" aria-labelledby="packagePromotionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="packagePromotionModalLabel">Create Package Promotion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="packagePromotionForm" action="{{ path('app_admin_create_package_promotion') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('create_package_promotion') }}">
+                    <div class="mb-3">
+                        <label for="promotionName" class="form-label">Promotion Name</label>
+                        <input type="text" class="form-control" id="promotionName" name="promotionName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promotionType" class="form-label">Promotion Type</label>
+                        <select class="form-select" id="promotionType" name="promotionType">
+                            <option value="discount">Percentage Discount</option>
+                            <option value="bonus_credits">Bonus Credits</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 promotion-discount">
+                        <label for="discountPercentage" class="form-label">Discount Percentage</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="discountPercentage" name="discountPercentage" min="1" max="100" value="15" required>
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="mb-3 promotion-bonus-credits d-none">
+                        <label for="bonusCredits" class="form-label">Bonus Credits</label>
+                        <input type="number" class="form-control" id="bonusCredits" name="bonusCredits" min="1" value="20" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promotionPackages" class="form-label">Apply to Packages</label>
+                        <select class="form-select" id="promotionPackages" name="promotionPackages[]" multiple>
+                            <option value="small">Small Package</option>
+                            <option value="medium">Medium Package</option>
+                            <option value="large">Large Package</option>
+                            <option value="professional">Professional Package</option>
+                        </select>
+                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple packages</small>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="promotionStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="promotionStartDate" name="promotionStartDate" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="promotionEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="promotionEndDate" name="promotionEndDate" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promotionCode" class="form-label">Promo Code (Optional)</label>
+                        <input type="text" class="form-control" id="promotionCode" name="promotionCode">
+                        <small class="form-text text-muted">Leave blank to apply automatically</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="savePromotionBtn" onclick="document.getElementById('packagePromotionForm').submit()">Create Promotion</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Package Settings Modal -->
+<div class="modal fade" id="packageSettingsModal" tabindex="-1" aria-labelledby="packageSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="packageSettingsModalLabel">Package Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="packageSettingsForm" action="{{ path('app_admin_update_package_settings') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('update_package_settings') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Display Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showPricePerCredit" name="showPricePerCredit" checked>
+                            <label class="form-check-label" for="showPricePerCredit">
+                                Show Price Per Credit
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showSalesCount" name="showSalesCount" checked>
+                            <label class="form-check-label" for="showSalesCount">
+                                Show Number of Sales
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="paymentCredit" name="paymentCredit" checked>
+                            <label class="form-check-label" for="paymentCredit">
+                                Credit/Debit Cards
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="paymentPayPal" name="paymentPayPal">
+                            <label class="form-check-label" for="paymentPayPal">
+                                PayPal
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Notifications</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="emailPurchase" name="emailPurchase" checked>
+                            <label class="form-check-label" for="emailPurchase">
+                                Purchase Confirmation
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="emailReceipt" name="emailReceipt" checked>
+                            <label class="form-check-label" for="emailReceipt">
+                                Send Receipt
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="emailPromotion" name="emailPromotion" checked>
+                            <label class="form-check-label" for="emailPromotion">
+                                Promotional Emails
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveSettingsBtn" onclick="document.getElementById('packageSettingsForm').submit()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle toggle switches for packages
+    const packageToggleSwitches = document.querySelectorAll('.form-check-input[id^="package"]');
+    packageToggleSwitches.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const packageId = this.id.replace('package', '').replace('Active', '');
+            const isActive = this.checked;
+            
+            // Show a loading indicator
+            const parentCard = this.closest('.package-card');
+            parentCard.style.opacity = '0.6';
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('editPackageIsActive', isActive ? '1' : '');
+            formData.append('_csrf_token', '{{ csrf_token('edit_package') }}');
+            
+            // Use the existing route to update the package
+            fetch('{{ path('app_admin_edit_package_addon', {'id': 'PACKAGE_ID'}) }}'.replace('PACKAGE_ID', packageId), {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server responded with an error');
+                }
+                
+                // Create success notification
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed top-0 end-0 p-3 mt-5';
+                toast.style.zIndex = '5000';
+                toast.innerHTML = `
+                    <div class="toast show bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header bg-success text-white">
+                            <strong class="me-auto">Success</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">
+                            Package ${isActive ? 'activated' : 'deactivated'} successfully
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                // Remove the toast after 3 seconds
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+                
+                // Restore the card's appearance
+                parentCard.style.opacity = '1';
+            })
+            .catch(error => {
+                console.error('Error updating package:', error);
+                
+                // Show error message
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed top-0 end-0 p-3 mt-5';
+                toast.style.zIndex = '5000';
+                toast.innerHTML = `
+                    <div class="toast show bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header bg-danger text-white">
+                            <strong class="me-auto">Error</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">
+                            Failed to update package status. Please try again.
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                // Remove the toast after 3 seconds
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+                
+                // Revert the toggle to its previous state
+                this.checked = !isActive;
+                
+                // Restore the card's appearance
+                parentCard.style.opacity = '1';
+            });
+        });
+    });
+    
+    // Package Sales Chart (for modal)
+    const ctxPackageSales = document.getElementById('packageSalesChart')?.getContext('2d');
+    if (ctxPackageSales) {
+        const packageSalesChart = new Chart(ctxPackageSales, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Sales',
+                    data: [3, 5, 8, 9, 12, 15, 18, 22, 25, 28, 32, 35],
+                    borderColor: '#36b9cc',
+                    backgroundColor: 'rgba(54, 185, 204, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Sales'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Handle promotion type toggle
+    const promotionType = document.getElementById('promotionType');
+    if (promotionType) {
+        promotionType.addEventListener('change', function() {
+            const discountFields = document.querySelector('.promotion-discount');
+            const bonusFields = document.querySelector('.promotion-bonus-credits');
+            
+            if (this.value === 'discount') {
+                discountFields.classList.remove('d-none');
+                bonusFields.classList.add('d-none');
+            } else if (this.value === 'bonus_credits') {
+                discountFields.classList.add('d-none');
+                bonusFields.classList.remove('d-none');
+            }
+        });
+    }
+    
+    // Handle edit package modal
+    const editPackageModal = document.getElementById('editPackageModal');
+    if (editPackageModal) {
+        editPackageModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const packageId = button.getAttribute('data-package-id');
+            fetchPackageData(packageId);
+        });
+    }
+    
+    // Handle package stats modal
+    const packageStatsModal = document.getElementById('packageStatsModal');
+    if (packageStatsModal) {
+        packageStatsModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const packageId = button.getAttribute('data-package-id');
+            
+            // Dynamically update stats if needed
+        });
+    }
+    
+    // Set default dates for promotion modal
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setDate(today.getDate() + 30);
+    
+    const promotionStartDate = document.getElementById('promotionStartDate');
+    const promotionEndDate = document.getElementById('promotionEndDate');
+    
+    if (promotionStartDate && promotionEndDate) {
+        promotionStartDate.valueAsDate = today;
+        promotionEndDate.valueAsDate = endDate;
+    }
+    
+    // Function to handle package deletion
+    window.submitDeletePackageForm = function() {
+        const packageId = document.getElementById('editPackageId').value;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ path('app_admin_delete_package_addon', {'id': 'PACKAGE_ID'}) }}'.replace('PACKAGE_ID', packageId);
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_csrf_token';
+        csrfToken.value = '{{ csrf_token('delete_package') }}';
+        form.appendChild(csrfToken);
+        
+        const packageIdInput = document.createElement('input');
+        packageIdInput.type = 'hidden';
+        packageIdInput.name = 'packageId';
+        packageIdInput.value = packageId;
+        form.appendChild(packageIdInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    };
+    
+    // Function to fetch package data
+    function fetchPackageData(packageId) {
+        // Get the form element
+        const form = document.getElementById('editPackageForm');
+        const modalBody = editPackageModal.querySelector('.modal-body');
+        
+        // Clear any existing error messages
+        const existingAlerts = modalBody.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        // Set hidden ID field
+        document.getElementById('editPackageId').value = packageId;
+        
+        // Display loading indicator
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'text-center my-4 position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75';
+        loadingIndicator.style.zIndex = '1050';
+        loadingIndicator.innerHTML = '<div class="position-absolute top-50 start-50 translate-middle"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading package data...</p></div>';
+        modalBody.style.position = 'relative';
+        modalBody.appendChild(loadingIndicator);
+        
+        // Disable form inputs while loading
+        const formInputs = form.querySelectorAll('input, select, textarea, button');
+        formInputs.forEach(input => input.disabled = true);
+        
+        /* Helper functions were moved above */
+        
+        // Helper function to safely set form field values
+        function setFormValue(fieldId, value, fallback = '') {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = (value !== undefined && value !== null) ? value : fallback;
+                console.log(`Set ${fieldId} to:`, field.value);
+            } else {
+                console.warn(`Field ${fieldId} not found`);
+            }
+        }
+        
+        // Helper function to safely set checkbox state
+        function setCheckboxState(fieldId, value) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.checked = value === true || value === 1 || value === '1' || 
+                               value === 'true' || value === 'yes' || value === 'on';
+                console.log(`Set ${fieldId} checked state to:`, field.checked);
+            } else {
+                console.warn(`Checkbox ${fieldId} not found`);
+            }
+        }
+        
+        // Helper function to load fallback data from the card UI
+        function loadFallbackDataFromCard() {
+            try {
+                const packageCard = document.querySelector(`[data-package-id="${packageId}"]`).closest('.package-card');
+                if (packageCard) {
+                    console.log('Found package card, loading fallback data...');
+                    
+                    // Get name from card heading
+                    const nameElement = packageCard.querySelector('h3');
+                    if (nameElement) setFormValue('editPackageName', nameElement.textContent.trim());
+                    
+                    // Get prices
+                    const priceStandardElement = packageCard.querySelector('.h1.mb-0');
+                    if (priceStandardElement) {
+                        setFormValue('editPackagePriceStandard', 
+                            priceStandardElement.textContent.replace('$', '').trim());
+                    }
+                    
+                    const pricePremiumElement = packageCard.querySelector('.h5.mt-2');
+                    if (pricePremiumElement) {
+                        setFormValue('editPackagePricePremium', 
+                            pricePremiumElement.textContent.replace('$', '').trim());
+                    }
+                    
+                    // Get credits
+                    const creditsElement = packageCard.querySelector('.badge.bg-warning');
+                    if (creditsElement) {
+                        const creditsMatch = creditsElement.textContent.match(/(\d+)/);
+                        if (creditsMatch) setFormValue('editPackageCredits', creditsMatch[1]);
+                    }
+                    
+                    // Set active state
+                    const isActiveElement = packageCard.querySelector('.badge.bg-success');
+                    setCheckboxState('editPackageIsActive', isActiveElement !== null);
+                    
+                    console.log('Successfully loaded fallback data from card UI');
+                    return true;
+                }
+                return false;
+            } catch (fallbackError) {
+                console.error('Failed to apply fallback data from card:', fallbackError);
+                return false;
+            }
+        }
+        
+        // Use a fully qualified path to avoid routing issues
+        // This matches the direct route defined in the controller
+        console.log('Constructing API URL for package ID:', packageId);
+        
+        // Use full URL path to ensure it matches a defined route
+        const apiUrl = `/sellersbay/ecommerce-tools/public/admin/admin/package-addons/${packageId}/get`;
+        console.log('Fetching package data from:', apiUrl);
+        
+        // Fetch package data from the API endpoint
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received package data:', data);
+            
+            // Store the numeric ID for form submission
+            if (data.id) {
+                document.getElementById('editPackageId').value = data.id;
+                // Update form action with the numeric ID
+                form.action = form.action.replace('/placeholder', '/' + data.id);
+            }
+            
+            // Remove loading indicator
+            if (loadingIndicator.parentNode) {
+                modalBody.removeChild(loadingIndicator);
+            }
+            
+            // Enable form inputs
+            formInputs.forEach(input => input.disabled = false);
+            
+            // Populate form fields with data (using our helper function)
+            setFormValue('editPackageName', data.name);
+            setFormValue('editPackagePriceStandard', data.price_standard || data.priceStandard);
+            setFormValue('editPackagePricePremium', data.price_premium || data.pricePremium);
+            setFormValue('editPackageCredits', data.credits);
+            setFormValue('editPackageDescription', data.description);
+            setFormValue('editPackageDiscount', data.discount, '0');
+            setFormValue('editPackageStripeID', data.stripe_product_id || data.stripeProductId);
+            setFormValue('editPackageStripePriceStandard', data.stripe_price_id_standard || data.stripePriceStandard);
+            setFormValue('editPackageStripePricePremium', data.stripe_price_id_premium || data.stripePricePremium);
+            setFormValue('editPackageDisplayOrder', data.display_order || data.displayOrder, '1');
+            
+            // Set checkbox states (using our helper function)
+            setCheckboxState('editPackageIsFeatured', data.is_featured || data.isFeatured);
+            setCheckboxState('editPackageIsActive', data.is_active || data.isActive);
+            
+            // Show success message
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success';
+            successAlert.innerHTML = `<i class="fas fa-check-circle me-2"></i> Package data loaded successfully.`;
+            modalBody.insertBefore(successAlert, form);
+            
+            // Auto-dismiss success message after 3 seconds
+            setTimeout(() => {
+                if (successAlert.parentNode) {
+                    successAlert.parentNode.removeChild(successAlert);
+                }
+            }, 3000);
+        })
+        .catch(error => {
+            console.error('Error loading package data:', error);
+            
+            // Remove loading indicator
+            if (loadingIndicator.parentNode) {
+                modalBody.removeChild(loadingIndicator);
+            }
+            
+            // Show error message
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger';
+            errorAlert.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i> 
+                <strong>Error loading package data:</strong> ${error.message || 'Unknown error'}
+                <div class="small mt-1">Attempting to load data from UI...</div>
+            `;
+            modalBody.insertBefore(errorAlert, form);
+            
+            // Enable form inputs
+            formInputs.forEach(input => input.disabled = false);
+            
+            // Try to load data from card UI using our helper function
+            const fallbackLoaded = loadFallbackDataFromCard();
+            
+            if (fallbackLoaded) {
+                // Add fallback success message
+                const fallbackAlert = document.createElement('div');
+                fallbackAlert.className = 'alert alert-warning mt-3';
+                fallbackAlert.innerHTML = `<i class="fas fa-info-circle me-2"></i> Using data from UI as fallback. Some fields may be incomplete.`;
+                modalBody.insertBefore(fallbackAlert, form.nextSibling);
+                
+                // Auto-dismiss fallback message after 5 seconds
+                setTimeout(() => {
+                    if (fallbackAlert.parentNode) {
+                        fallbackAlert.parentNode.removeChild(fallbackAlert);
+                    }
+                }, 5000);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

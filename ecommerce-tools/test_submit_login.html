@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login Submit</title>
+    <script>
+        window.onload = function() {
+            // Auto-submit the form
+            document.getElementById('loginForm').submit();
+        }
+    </script>
+</head>
+<body>
+    <h1>Testing Login - Auto-submitting...</h1>
+    <form id="loginForm" action="http://127.0.0.1:8000/login" method="post">
+        <input type="hidden" name="_username" value="sellersbay@gmail.com">
+        <input type="hidden" name="_password" value="powder04">
+        <input type="hidden" name="_remember_me" value="on">
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

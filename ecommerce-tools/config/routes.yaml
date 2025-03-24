@@ -1,0 +1,19 @@
+# Explicit routes for controllers
+index:
+    path: /
+    controller: App\Controller\DefaultController::index
+# Define routes that override any annotations
+# This direct route ensures the credit packages page works regardless of cache state
+credit_packages_direct:
+    path: /sellersbay/ecommerce-tools/public/admin/credit-packages
+    controller: App\Controller\AdminController::creditPackagesManagement
+
+# Shorter alternative for the same page
+admin_credit_packages:
+    path: /admin/credit-packages
+    controller: App\Controller\AdminController::creditPackagesManagement
+simple:
+    path: /simple
+    controller: App\Controller\SimpleController::hello
+
+    

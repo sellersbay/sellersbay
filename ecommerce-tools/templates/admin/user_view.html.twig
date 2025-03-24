@@ -1,0 +1,939 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Details - Admin - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .admin-nav .nav-link {
+            color: #4e73df;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .admin-nav .nav-link:hover {
+            background-color: #eaecf4;
+        }
+        
+        .admin-nav .nav-link.active {
+            background-color: #4e73df;
+            color: white;
+        }
+        
+        .admin-nav .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        .user-profile-header {
+            background-color: #f8f9fc;
+            border-radius: 0.5rem;
+            padding: 2rem;
+        }
+        
+        .user-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #4e73df;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        
+        .user-info label {
+            font-weight: 600;
+            color: #4e73df;
+            font-size: 0.8rem;
+        }
+        
+        .user-stats-card {
+            border-left: 4px solid #4e73df;
+            transition: transform 0.2s;
+        }
+        
+        .user-stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .user-stats-card.products { border-left-color: #1cc88a; }
+        .user-stats-card.credits { border-left-color: #f6c23e; }
+        .user-stats-card.subscription { border-left-color: #36b9cc; }
+        
+        .tab-content {
+            padding: 1.5rem;
+            border: 1px solid #e3e6f0;
+            border-top: none;
+            border-radius: 0 0 0.35rem 0.35rem;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #5a5c69;
+            font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #4e73df;
+            font-weight: 700;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ path('app_admin_users') }}">Users</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">User Details</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 text-gray-800">User Details</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Admin Navigation Sidebar -->
+        <div class="col-xl-3 col-lg-4 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Admin Navigation</h6>
+                </div>
+                <div class="card-body">
+                    <div class="admin-nav">
+                        <a href="{{ path('app_admin_dashboard') }}" class="nav-link">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        <a href="{{ path('app_admin_users') }}" class="nav-link active">
+                            <i class="fas fa-users"></i> User Management
+                        </a>
+                        <a href="{{ path('app_admin_products') }}" class="nav-link">
+                            <i class="fas fa-box"></i> Product Management
+                        </a>
+                        <a href="{{ path('app_admin_credits') }}" class="nav-link">
+                            <i class="fas fa-coins"></i> Credits Management
+                        </a>
+                        <a href="{{ path('app_admin_subscriptions') }}" class="nav-link">
+                            <i class="fas fa-receipt"></i> Subscription Plans
+                        </a>
+                        <a href="{{ path('app_admin_statistics') }}" class="nav-link">
+                            <i class="fas fa-chart-bar"></i> System Statistics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ path('app_admin_user_edit', {'id': user.id}) }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-user-edit"></i> Edit User
+                        </a>
+                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#adjustCreditsModal">
+                            <i class="fas fa-coins"></i> Adjust Credits
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#impersonateUserModal">
+                            <i class="fas fa-user-secret"></i> Impersonate User
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                            <i class="fas fa-trash"></i> Delete User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="col-xl-9 col-lg-8">
+            <!-- User Profile Header -->
+            <div class="card shadow mb-4">
+                <div class="card-body p-0">
+                    <div class="user-profile-header">
+                        <div class="row align-items-center">
+                            <div class="col-lg-2 text-center mb-3 mb-lg-0">
+                                <div class="user-avatar mx-auto">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                            <div class="col-lg-7 user-info">
+                                <h2 class="h4 font-weight-bold mb-2">
+                                    {{ user.firstName }} {{ user.lastName }}
+                                    {% if user.isVerified %}
+                                        <i class="fas fa-check-circle text-success ms-2" 
+                                           data-bs-toggle="tooltip" title="Verified Account"></i>
+                                    {% else %}
+                                        <i class="fas fa-exclamation-circle text-warning ms-2" 
+                                           data-bs-toggle="tooltip" title="Unverified Account"></i>
+                                    {% endif %}
+                                </h2>
+                                <div class="mb-3">
+                                    <span class="h6 text-muted">{{ user.email }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    {% if 'ROLE_ADMIN' in user.roles %}
+                                        <span class="badge bg-danger me-1">Admin</span>
+                                    {% endif %}
+                                    {% if 'ROLE_PREMIUM' in user.roles %}
+                                        <span class="badge bg-warning me-1">Premium</span>
+                                    {% endif %}
+                                    <span class="badge bg-secondary">User</span>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label>User ID</label>
+                                        <p>{{ user.id }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label>Registered</label>
+                                        <p>{{ user.createdAt|date('Y-m-d H:i') }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label>Last Updated</label>
+                                        <p>{{ user.updatedAt|date('Y-m-d H:i') }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label>Status</label>
+                                        <p>
+                                            {% if user.isVerified %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check-circle"></i> Active
+                                                </span>
+                                            {% else %}
+                                                <span class="text-warning">
+                                                    <i class="fas fa-exclamation-circle"></i> Pending Verification
+                                                </span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 text-center">
+                                <div class="d-grid gap-2">
+                                    <a href="{{ path('app_admin_user_edit', {'id': user.id}) }}" class="btn btn-primary">
+                                        <i class="fas fa-user-edit"></i> Edit Profile
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#sendEmailModal">
+                                        <i class="fas fa-envelope"></i> Send Email
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Stats -->
+            <div class="row mb-4">
+                <!-- Credits Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow user-stats-card credits">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Credits</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ user.credits }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-coins fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#adjustCreditsModal">
+                                    <i class="fas fa-plus"></i> Adjust
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Products Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow user-stats-card products">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Products</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ products|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-box fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="#productsTab" class="btn btn-sm btn-success" data-bs-toggle="tab" data-bs-target="#products">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Subscription Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow user-stats-card subscription">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Subscription</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% if user.subscriptionTier %}
+                                            {{ user.subscriptionTier|capitalize }}
+                                        {% else %}
+                                            None
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#changeSubscriptionModal">
+                                    <i class="fas fa-edit"></i> Change
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Details Tabs -->
+            <div class="card shadow mb-4">
+                <div class="card-header p-0">
+                    <ul class="nav nav-tabs" id="userDetailsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" 
+                                    type="button" role="tab" aria-controls="profile" aria-selected="true">
+                                <i class="fas fa-user me-1"></i> Profile
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" 
+                                    type="button" role="tab" aria-controls="products" aria-selected="false">
+                                <i class="fas fa-box me-1"></i> Products
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" 
+                                    type="button" role="tab" aria-controls="activity" aria-selected="false">
+                                <i class="fas fa-history me-1"></i> Activity
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing" 
+                                    type="button" role="tab" aria-controls="billing" aria-selected="false">
+                                <i class="fas fa-credit-card me-1"></i> Billing
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" 
+                                    type="button" role="tab" aria-controls="settings" aria-selected="false">
+                                <i class="fas fa-cog me-1"></i> Settings
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="userDetailsTabsContent">
+                        <!-- Profile Tab -->
+                        <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                            <h5 class="mb-4">User Information</h5>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="text" class="form-control" value="{{ user.email }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" value="{{ user.firstName }} {{ user.lastName }}" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h5 class="mb-4">Roles & Permissions</h5>
+                            <div class="mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" disabled
+                                                           {% if 'ROLE_USER' in user.roles %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        <span class="badge bg-secondary">ROLE_USER</span>
+                                                        <small class="d-block text-muted">Basic account access</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" disabled
+                                                           {% if 'ROLE_PREMIUM' in user.roles %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        <span class="badge bg-warning">ROLE_PREMIUM</span>
+                                                        <small class="d-block text-muted">Premium features access</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" disabled
+                                                           {% if 'ROLE_ADMIN' in user.roles %}checked{% endif %}>
+                                                    <label class="form-check-label">
+                                                        <span class="badge bg-danger">ROLE_ADMIN</span>
+                                                        <small class="d-block text-muted">Administrative access</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <a href="{{ path('app_admin_user_edit', {'id': user.id}) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                            <i class="fas fa-edit"></i> Edit Roles
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h5 class="mb-4">WooCommerce Integration</h5>
+                            <div class="mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        {% if user.woocommerceStoreUrl %}
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Store URL</label>
+                                                    <input type="text" class="form-control" value="{{ user.woocommerceStoreUrl }}" readonly>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">API Keys</label>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" value="••••••••••••••••" readonly>
+                                                        <button class="btn btn-outline-secondary" type="button"
+                                                                data-bs-toggle="modal" data-bs-target="#viewApiKeysModal">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex">
+                                                <button class="btn btn-sm btn-outline-primary me-2">
+                                                    <i class="fas fa-sync"></i> Test Connection
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-unlink"></i> Remove Connection
+                                                </button>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                No WooCommerce store connected.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Products Tab -->
+                        <div class="tab-pane fade" id="products" role="tabpanel" aria-labelledby="products-tab">
+                            {% if products is empty %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    This user has no products.
+                                </div>
+                            {% else %}
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Product Name</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for product in products %}
+                                                <tr>
+                                                    <td>{{ product.id }}</td>
+                                                    <td>{{ product.name }}</td>
+                                                    <td>
+                                                        {% if product.status == 'imported' %}
+                                                            <span class="badge bg-secondary">Imported</span>
+                                                        {% elseif product.status == 'ai_processed' %}
+                                                            <span class="badge bg-primary">AI Processed</span>
+                                                        {% elseif product.status == 'exported' %}
+                                                            <span class="badge bg-success">Exported</span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-dark">{{ product.status|capitalize }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ product.createdAt|date('Y-m-d') }}</td>
+                                                    <td>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <a href="{{ path('app_admin_product_view', {'id': product.id}) }}" class="btn btn-info">
+                                                                <i class="fas fa-eye"></i>
+                                                            </a>
+                                                            <button type="button" class="btn btn-danger">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Activity Tab -->
+                        <div class="tab-pane fade" id="activity" role="tabpanel" aria-labelledby="activity-tab">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Activity tracking is still in development. This feature will be available soon.
+                            </div>
+                            
+                            <!-- Placeholder timeline for future implementation -->
+                            <div class="activity-timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-item-marker">
+                                        <div class="timeline-item-marker-indicator bg-primary">
+                                            <i class="fas fa-user-edit text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item-content">
+                                        <p class="fw-bold mb-2">Profile Updated</p>
+                                        <p class="text-muted mb-0">User updated their profile information</p>
+                                        <p class="text-xs text-muted">Today at 12:45 PM</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="timeline-item">
+                                    <div class="timeline-item-marker">
+                                        <div class="timeline-item-marker-indicator bg-success">
+                                            <i class="fas fa-box text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item-content">
+                                        <p class="fw-bold mb-2">Product Exported</p>
+                                        <p class="text-muted mb-0">User exported AI-processed content to WooCommerce</p>
+                                        <p class="text-xs text-muted">Yesterday at 3:30 PM</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="timeline-item">
+                                    <div class="timeline-item-marker">
+                                        <div class="timeline-item-marker-indicator bg-warning">
+                                            <i class="fas fa-coins text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item-content">
+                                        <p class="fw-bold mb-2">Credits Purchased</p>
+                                        <p class="text-muted mb-0">User purchased 50 credits</p>
+                                        <p class="text-xs text-muted">3 days ago</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Billing Tab -->
+                        <div class="tab-pane fade" id="billing" role="tabpanel" aria-labelledby="billing-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Payment Method</h5>
+                                    {% if user.stripeCustomerId %}
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fab fa-cc-visa fa-2x me-3 text-primary"></i>
+                                                    <div>
+                                                        <div class="fw-bold">Visa ending in 4242</div>
+                                                        <div class="text-muted small">Expires 12/2025</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-sync"></i> Update Payment Method
+                                        </button>
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            No payment method on file.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Subscription</h5>
+                                    {% if user.subscriptionTier %}
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="fw-bold">{{ user.subscriptionTier|capitalize }}</h6>
+                                                <div class="my-2">
+                                                    <span class="badge bg-success">Active</span>
+                                                </div>
+                                                <div class="small text-muted mb-2">
+                                                    <i class="fas fa-calendar-alt me-1"></i> Renews on: Dec 31, 2023
+                                                </div>
+                                                <div class="d-flex mt-3">
+                                                    <button class="btn btn-sm btn-outline-warning me-2" data-bs-toggle="modal" data-bs-target="#changeSubscriptionModal">
+                                                        <i class="fas fa-edit"></i> Change Plan
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-times"></i> Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            No active subscription.
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSubscriptionModal">
+                                            <i class="fas fa-plus"></i> Add Subscription
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <h5 class="mb-3">Payment History</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2023-12-01</td>
+                                            <td>Credit Package (Medium)</td>
+                                            <td>$39.99</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-file-invoice"></i> Invoice
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-11-01</td>
+                                            <td>Subscription (Professional)</td>
+                                            <td>$39.99</td>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-file-invoice"></i> Invoice
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Settings Tab -->
+                        <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                            <h5 class="mb-4">Account Settings</h5>
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h6 class="mb-3">Account Status</h6>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="accountActive" checked>
+                                        <label class="form-check-label" for="accountActive">Account Active</label>
+                                    </div>
+                                    
+                                    <h6 class="mb-3">Email Verification</h6>
+                                    <div class="d-flex align-items-center mb-3">
+                                        {% if user.isVerified %}
+                                            <span class="badge bg-success me-2">Verified</span>
+                                            <button class="btn btn-sm btn-outline-warning ms-2">
+                                                <i class="fas fa-paper-plane"></i> Resend Verification
+                                            </button>
+                                        {% else %}
+                                            <span class="badge bg-warning me-2">Unverified</span>
+                                            <button class="btn btn-sm btn-outline-primary ms-2">
+                                                <i class="fas fa-paper-plane"></i> Send Verification
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success ms-2">
+                                                <i class="fas fa-check"></i> Mark as Verified
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <h6 class="mb-3">Password Reset</h6>
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-lock"></i> Send Password Reset Link
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <h5 class="mb-4">Danger Zone</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h6 class="mb-1">Delete Account</h6>
+                                            <p class="text-muted mb-0 small">Permanently delete this user account and all associated data</p>
+                                        </div>
+                                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h6 class="mb-1">Export User Data</h6>
+                                            <p class="text-muted mb-0 small">Download all data associated with this user</p>
+                                        </div>
+                                        <button class="btn btn-outline-secondary">
+                                            <i class="fas fa-download"></i> Export
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Lock Account</h6>
+                                            <p class="text-muted mb-0 small">Temporarily prevent user from logging in</p>
+                                        </div>
+                                        <button class="btn btn-outline-warning">
+                                            <i class="fas fa-lock"></i> Lock
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Adjust Credits Modal -->
+<div class="modal fade" id="adjustCreditsModal" tabindex="-1" aria-labelledby="adjustCreditsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adjustCreditsModalLabel">Adjust Credits</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adjustCreditsForm">
+                    <div class="mb-3">
+                        <label class="form-label">User</label>
+                        <input type="text" class="form-control" value="{{ user.firstName }} {{ user.lastName }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Credits</label>
+                        <input type="text" class="form-control" value="{{ user.credits }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustmentType" class="form-label">Adjustment Type</label>
+                        <select class="form-select" id="adjustmentType">
+                            <option value="add">Add Credits</option>
+                            <option value="subtract">Remove Credits</option>
+                            <option value="set">Set Exact Value</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="creditsAmount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="creditsAmount" min="0" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustmentReason" class="form-label">Reason (Optional)</label>
+                        <textarea class="form-control" id="adjustmentReason" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveCreditsBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Subscription Modal -->
+<div class="modal fade" id="changeSubscriptionModal" tabindex="-1" aria-labelledby="changeSubscriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeSubscriptionModalLabel">Change Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Current Subscription</label>
+                    <input type="text" class="form-control" value="{{ user.subscriptionTier ? user.subscriptionTier|capitalize : 'None' }}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="newSubscription" class="form-label">New Subscription</label>
+                    <select class="form-select" id="newSubscription">
+                        <option value="">No Subscription</option>
+                        <option value="starter">Starter ($9.99/month)</option>
+                        <option value="professional">Professional ($39.99/month)</option>
+                        <option value="enterprise">Enterprise ($69.99/month)</option>
+                    </select>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="updateRole">
+                    <label class="form-check-label" for="updateRole">
+                        Update user role based on subscription
+                    </label>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Changing the subscription will update the user's subscription tier and can update their role as well.
+                    Professional and Enterprise subscriptions grant the ROLE_PREMIUM role.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the user <strong>{{ user.firstName }} {{ user.lastName }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone. All user data including products, payment history, and activity will be permanently deleted.</p>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                    <label class="form-check-label" for="confirmDelete">
+                        I understand this action is permanent and cannot be undone
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteUserBtn" disabled>Delete User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Impersonate User Modal -->
+<div class="modal fade" id="impersonateUserModal" tabindex="-1" aria-labelledby="impersonateUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="impersonateUserModalLabel">Impersonate User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to impersonate <strong>{{ user.firstName }} {{ user.lastName }}</strong>.</p>
+                <p>This will allow you to view the application as this user would see it. All actions performed will be logged.</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Remember to exit impersonation when finished by clicking the "Exit Impersonation" button that will appear in the navbar.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Start Impersonation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Email Modal -->
+<div class="modal fade" id="sendEmailModal" tabindex="-1" aria-labelledby="sendEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendEmailModalLabel">Send Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">To</label>
+                    <input type="text" class="form-control" value="{{ user.email }}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="emailSubject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="emailSubject">
+                </div>
+                <div class="mb-3">
+                    <label for="emailTemplate" class="form-label">Template</label>
+                    <select class="form-select" id="emailTemplate">
+                        <option value="">Custom Message</option>
+                        <option value="welcome">Welcome Email</option>
+                        <option value="password_reset">Password Reset</option>
+                        <option value="verification">Account Verification</option>
+                        <option value="subscription_reminder">Subscription Renewal Reminder</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="emailContent" class="form-label">Message</label>
+                    <textarea class="form-control" id="emailContent" rows="5"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Send Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle confirm delete checkbox
+    const confirmDeleteCheckbox = document.getElementById('confirmDelete');
+    const deleteUserBtn = document.getElementById('deleteUserBtn');
+    
+    if (confirmDeleteCheckbox && deleteUserBtn) {
+        confirmDeleteCheckbox.addEventListener('change', function() {
+            deleteUserBtn.disabled = !this.checked;
+        });
+    }
+    
+    // Handle tab activation from fragment identifier
+    const hash = window.location.hash;
+    if (hash) {
+        const triggerEl = document.querySelector('button[data-bs-target="' + hash + '"]');
+        if (triggerEl) {
+            new bootstrap.Tab(triggerEl).show();
+        }
+    }
+});
+</script>
+{% endblock %}

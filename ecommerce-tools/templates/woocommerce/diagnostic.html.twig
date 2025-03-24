@@ -1,0 +1,149 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}WooCommerce Connection Test - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">WooCommerce Connection Test</h1>
+                        <div>
+                            <a href="{{ path('app_woocommerce_dashboard') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><i class="fas fa-info-circle me-2"></i> This utility helps diagnose WooCommerce API connection issues that may cause "Sync" functionality problems.</p>
+                        <p class="mb-0">Enter your WooCommerce store details below to test the connection.</p>
+                    </div>
+                    
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+                    
+                    <form method="post" action="{{ path('app_woocommerce_diagnostic', {'product_id': product_id}) }}" class="mb-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="store_url" class="form-label">Store URL:</label>
+                                <input type="text" id="store_url" name="store_url" class="form-control" 
+                                       placeholder="https://your-store.com" value="{{ store_url }}" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="product_id" class="form-label">Product ID (optional):</label>
+                                <input type="text" id="product_id" name="product_id" class="form-control" 
+                                       placeholder="e.g., 123" value="{{ product_id }}">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="consumer_key" class="form-label">Consumer Key:</label>
+                                <input type="text" id="consumer_key" name="consumer_key" class="form-control" 
+                                       placeholder="ck_xxxxxxxxxxxx" value="{{ consumer_key }}" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="consumer_secret" class="form-label">Consumer Secret:</label>
+                                <input type="text" id="consumer_secret" name="consumer_secret" class="form-control" 
+                                       placeholder="cs_xxxxxxxxxxxx" value="{{ consumer_secret }}" required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-network-wired me-1"></i> Run Connection Tests
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <h2 class="h4 mt-4 mb-3">System Information</h2>
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Environment Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">{{ network_info|raw }}</div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="h4 mt-4 mb-3">Connection Status</h2>
+                    <div class="test-results">
+                        {% if results is empty %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> No connection tests have been run yet. Click "Run Connection Tests" to diagnose your WooCommerce connection.
+                            </div>
+                        {% else %}
+                            {% for key, test in results %}
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">{{ test.name }}</h5>
+                                            <span class="badge {% if test.status == 'Success' or test.status == 'Passed' %}bg-success{% elseif test.status == 'Warning' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ test.status }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if test.details is defined %}
+                                            <div class="mb-2">{{ test.details|raw }}</div>
+                                        {% endif %}
+                                        
+                                        {% if test.error_message is defined %}
+                                            <div class="alert alert-danger mb-0">
+                                                Error: {{ test.error_message }}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if test.products is defined %}
+                                            <div class="alert alert-success mb-0">
+                                                {{ test.products }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    {% if has_connection %}
+                        <div class="alert alert-success">
+                            <h4 class="alert-heading"><i class="fas fa-check-circle me-2"></i> Connection Successful!</h4>
+                            <p>Your WooCommerce store's API is accessible.</p>
+                            <hr>
+                            <p class="mb-0">If you're still having issues with the "Sync" button in the application, please check:</p>
+                            <ul class="mb-0 mt-2">
+                                <li>That you're using the same credentials in the application as you tested here</li>
+                                <li>That the product ID exists in your WooCommerce store</li>
+                                <li>Your server's network configuration allows outbound connections to your WooCommerce store</li>
+                            </ul>
+                        </div>
+                    {% elseif results is not empty %}
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i> Connection Issues Detected</h4>
+                            <p>The system detected problems connecting to your WooCommerce store API. Here are some suggestions:</p>
+                            <ul class="mb-0 mt-2">
+                                <li>Verify that your store URL is correct and includes http:// or https://</li>
+                                <li>Check if your consumer key and secret are valid and have proper permissions</li>
+                                <li>Make sure your WooCommerce REST API is enabled</li>
+                                <li>Confirm that your server's firewall allows outbound connections</li>
+                                <li>If using HTTPS, verify that SSL certificate verification isn't causing issues</li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

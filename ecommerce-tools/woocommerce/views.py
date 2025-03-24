@@ -1,0 +1,6 @@
+from django.shortcuts import render
+
+def connect(request):
+    # ...existing code...
+    return render(request, 'woocommerce/connect.html')
+    # ...existing code...

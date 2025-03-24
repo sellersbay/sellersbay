@@ -1,0 +1,377 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Subscription Plans - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h1 class="h3 mb-0">Subscription Plans</h1>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    {% if is_subscribed %}
+                        <div class="alert alert-success mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="alert-heading">Active Subscription: {{ current_tier|capitalize }}</h5>
+                                    <p class="mb-0">
+                                        You have an active {{ current_tier|capitalize }} subscription. You can upgrade to a higher tier
+                                        or purchase additional credit packages below.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-primary mb-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle fa-2x"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="alert-heading">Subscription Required</h5>
+                                    <p class="mb-0">
+                                        An active subscription is required to use RoboSEO. Each plan includes a monthly allocation of credits.
+                                        After subscribing, you can purchase additional credit packages as needed.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-coins fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="alert-heading">About Credits</h5>
+                                <p class="mb-0">
+                                    Credits are used to generate SEO-optimized content for your products. Each content 
+                                    generation uses 1 credit and includes:
+                                </p>
+                                <ul class="mb-0 mt-2">
+                                    <li>Product descriptions optimized for search engines</li>
+                                    <li>Short descriptions for product listings</li>
+                                    <li>Meta descriptions for better SEO</li>
+                                    <li>Image alt text for accessibility and SEO</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if is_subscribed and plans|length > 0 %}
+                        <h3 class="mb-4">Upgrade Options</h3>
+                    {% endif %}
+
+                    <!-- Subscription Plans Section -->
+                    <div class="plans-container mb-5">
+                        {% if is_subscribed and plans|length > 0 %}
+                            <div class="section-header mb-4">
+                                <h3 class="gradient-underline">Available Upgrade Options</h3>
+                                <p class="text-muted text-center">Take your RoboSEO experience to the next level with these premium tiers</p>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-4 justify-content-center">
+                            {% for plan_id, plan in plans %}
+                                <div class="col-md-4">
+                                    <div class="card plan-card h-100 {% if plan_id == 'professional' and not is_subscribed %}card-highlight{% endif %} shadow-lg">
+                                        <div class="card-header text-center bg-transparent border-0 pt-4">
+                                            {% if plan_id == 'professional' and not is_subscribed %}
+                                                <div class="ribbon ribbon-top-right">
+                                                    <span>Best Value</span>
+                                                </div>
+                                            {% endif %}
+                                            <h3 class="plan-name">{{ plan.name }}</h3>
+                                            <p class="text-muted small mb-0">
+                                                {% if is_subscribed %}
+                                                    Upgrade from your current plan
+                                                {% else %}
+                                                    Monthly subscription
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <div class="pricing mb-4">
+                                                <div class="price-display">
+                                                    <span class="currency">$</span>
+                                                    <span class="amount">{{ plan.price }}</span>
+                                                </div>
+                                                <div class="text-muted billing-cycle">per month</div>
+                                            </div>
+                                            <div class="credits-badge mb-4">
+                                                <span class="badge bg-primary p-2 rounded-pill">
+                                                    <i class="fas fa-coins me-1"></i>
+                                                    {{ plan.credits }} Credits Included
+                                                </span>
+                                            </div>
+                                            <div class="features mb-4">
+                                                <ul class="list-unstyled">
+                                                    {% if plan.feature_descriptions is defined and plan.feature_descriptions|length > 0 %}
+                                                        {# Use the feature_descriptions array from the database #}
+                                                        {% for feature in plan.feature_descriptions %}
+                                                            <li class="feature-item mb-2">
+                                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                                {{ feature }}
+                                                            </li>
+                                                        {% endfor %}
+                                                    {% elseif plan.features is defined %}
+                                                        {# Fallback for old-style features array (strings) #}
+                                                        {% for feature in plan.features %}
+                                                            {% if feature is not same as(true) and feature is not same as(false) %}
+                                                                <li class="feature-item mb-2">
+                                                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                                                    {{ feature }}
+                                                                </li>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    <li class="feature-item mb-2">
+                                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                                        Additional credit packs available
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer bg-transparent border-0 pb-4">
+                                            <div class="d-grid">
+                                                <a href="{{ path('app_subscription_purchase', {'plan': plan_id}) }}" 
+                                                class="btn {% if plan_id == 'professional' and not is_subscribed %}btn-primary{% else %}btn-outline-primary{% endif %} btn-lg">
+                                                    {% if is_subscribed %}
+                                                        Upgrade Now
+                                                    {% else %}
+                                                        Subscribe Now
+                                                    {% endif %}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% if is_subscribed and show_add_ons %}
+                        <!-- Add-on Packages Section -->
+                        <div class="addons-container mt-5">
+                            <div class="section-header mb-4">
+                                <h3 class="gradient-underline">Add-on Credit Packages</h3>
+                                <p class="text-muted text-center">Need more credits? Purchase additional packages anytime</p>
+                            </div>
+                            
+                            <div class="row g-4 justify-content-center">
+                                {% for package_id, package in credit_packages %}
+                                    <div class="col-md-4">
+                                        <div class="card addon-card h-100 {% if package_id == 'medium' %}card-highlight{% endif %} shadow-lg">
+                                            <div class="card-header text-center bg-transparent border-0 pt-4">
+                                                {% if package_id == 'medium' %}
+                                                    <div class="ribbon ribbon-top-right">
+                                                        <span>Best Value</span>
+                                                    </div>
+                                                {% endif %}
+                                                <h3 class="plan-name">{{ package.name }}</h3>
+                                                <p class="text-muted small mb-0">One-time credit purchase</p>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <div class="pricing mb-4">
+                                                    <div class="price-display">
+                                                        <span class="currency">$</span>
+                                                        <span class="amount">{{ package.price }}</span>
+                                                    </div>
+                                                    <div class="text-muted billing-cycle">one-time payment</div>
+                                                </div>
+                                                <div class="credits-badge mb-4">
+                                                    <span class="badge bg-primary p-2 rounded-pill">
+                                                        <i class="fas fa-coins me-1"></i>
+                                                        {{ package.credits }} Credits
+                                                    </span>
+                                                </div>
+                                                <div class="package-benefits mb-4">
+                                                    <div class="benefit-item">
+                                                        <i class="fas fa-bolt text-warning me-2"></i>
+                                                        Instantly available
+                                                    </div>
+                                                    <div class="benefit-item">
+                                                        <i class="fas fa-infinity text-info me-2"></i>
+                                                        Never expires
+                                                    </div>
+                                                    {% if is_premium %}
+                                                    <div class="benefit-item">
+                                                        <i class="fas fa-tag text-success me-2"></i>
+                                                        Premium discount applied
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="card-footer bg-transparent border-0 pb-4">
+                                                <div class="d-grid">
+                                                    <a href="{{ path('app_process_credit_purchase', {'package': package_id}) }}" 
+                                                    class="btn {% if package_id == 'medium' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-lg">
+                                                        Purchase Now
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Contact Section -->
+                    <div class="contact-section text-center mt-5 pt-4 pb-2">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <h4 class="mb-3">Need a Custom Solution?</h4>
+                                    <p class="text-muted mb-4">
+                                        {% if is_subscribed %}
+                                            Contact us for custom credit packages or bulk credit purchases tailored to your specific needs.
+                                        {% else %}
+                                            After subscribing, you can purchase additional credit packs or contact us for custom enterprise solutions.
+                                        {% endif %}
+                                    </p>
+                                    <a href="#" class="btn btn-outline-primary btn-lg px-4">
+                                        <i class="fas fa-envelope me-2"></i> Contact Sales
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Ribbon Styles */
+.ribbon {
+    width: 150px;
+    height: 150px;
+    overflow: hidden;
+    position: absolute;
+}
+.ribbon span {
+    position: absolute;
+    display: block;
+    width: 225px;
+    padding: 8px 0;
+    background-color: #3498db;
+    box-shadow: 0 5px 10px rgba(0,0,0,.1);
+    color: #fff;
+    font: 700 13px/1 'Open Sans', sans-serif;
+    text-shadow: 0 1px 1px rgba(0,0,0,.2);
+    text-transform: uppercase;
+    text-align: center;
+}
+.ribbon-top-right {
+    top: -10px;
+    right: -10px;
+}
+.ribbon-top-right span {
+    left: -25px;
+    top: 30px;
+    transform: rotate(45deg);
+}
+
+/* Card Styles */
+.card-highlight {
+    border: 2px solid #3498db;
+    transform: translateY(-5px);
+    transition: transform 0.3s ease;
+}
+.card-highlight:hover {
+    transform: translateY(-8px);
+}
+.plan-card, .addon-card {
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+.plan-card:hover, .addon-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+}
+
+/* Section Header Styles */
+.section-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.gradient-underline {
+    display: inline-block;
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+.gradient-underline:after {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 3px;
+    left: 20%;
+    bottom: -10px;
+    background: linear-gradient(to right, #3498db, #2ecc71);
+    border-radius: 2px;
+}
+
+/* Pricing Styles */
+.price-display {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    margin-bottom: 5px;
+}
+.currency {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-right: 2px;
+    color: #444;
+}
+.amount {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+}
+.billing-cycle {
+    font-size: 0.9rem;
+}
+
+/* Feature and Benefit Styles */
+.feature-item, .benefit-item {
+    margin-bottom: 10px;
+    text-align: left;
+    padding: 5px 10px;
+}
+.benefit-item {
+    background-color: rgba(52, 152, 219, 0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.plan-name {
+    color: #3498db;
+    font-weight: 700;
+    font-size: 1.8rem;
+}
+
+/* Card container spacing */
+.plans-container, .addons-container {
+    padding: 1rem 0;
+}
+</style>
+{% endblock %}

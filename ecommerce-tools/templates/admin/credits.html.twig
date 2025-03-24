@@ -1,0 +1,1094 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Credits Management - Admin - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .admin-nav .nav-link {
+            color: #4e73df;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .admin-nav .nav-link:hover {
+            background-color: #eaecf4;
+        }
+        
+        .admin-nav .nav-link.active {
+            background-color: #4e73df;
+            color: white;
+        }
+        
+        .admin-nav .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        .stats-card {
+            border-left: 4px solid #4e73df;
+            transition: transform 0.2s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card.credits { border-left-color: #f6c23e; }
+        .stats-card.revenue { border-left-color: #1cc88a; }
+        .stats-card.usage { border-left-color: #36b9cc; }
+        
+        .credit-package-card {
+            border: 1px solid #e3e6f0;
+            border-radius: 0.35rem;
+            transition: all 0.2s;
+        }
+        
+        .credit-package-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .credit-package-card.featured {
+            border: 2px solid #4e73df;
+            position: relative;
+        }
+        
+        .credit-package-card.featured::before {
+            content: 'Best Value';
+            position: absolute;
+            top: -12px;
+            right: 10px;
+            background-color: #4e73df;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .edit-package-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        
+        .credit-package-card:hover .edit-package-btn {
+            opacity: 1;
+        }
+        
+        .promo-badge {
+            background-color: #e74a3b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0 text-gray-800">Credits Management</h1>
+            <p class="text-muted">Manage credit packages, pricing, and track credit usage.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Admin Navigation Sidebar -->
+        <div class="col-xl-3 col-lg-4 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Admin Navigation</h6>
+                </div>
+                <div class="card-body">
+                    <div class="admin-nav">
+                        <a href="{{ path('app_admin_dashboard') }}" class="nav-link">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        <a href="{{ path('app_admin_users') }}" class="nav-link">
+                            <i class="fas fa-users"></i> User Management
+                        </a>
+                        <a href="{{ path('app_admin_products') }}" class="nav-link">
+                            <i class="fas fa-box"></i> Product Management
+                        </a>
+                        <a href="{{ path('app_admin_credits') }}" class="nav-link active">
+                            <i class="fas fa-coins"></i> Credits Management
+                        </a>
+                        <a href="{{ path('app_admin_subscriptions') }}" class="nav-link">
+                            <i class="fas fa-receipt"></i> Subscription Plans
+                        </a>
+                        <a href="{{ path('app_admin_statistics') }}" class="nav-link">
+                            <i class="fas fa-chart-bar"></i> System Statistics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                            <i class="fas fa-plus"></i> Create New Package
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#creditsAdjustmentModal">
+                            <i class="fas fa-user-edit"></i> Adjust User Credits
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#creditPromotionModal">
+                            <i class="fas fa-tags"></i> Create Promotion
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="col-xl-9 col-lg-8">
+            <!-- Stats Cards Row -->
+            <div class="row mb-4">
+                <!-- Total Credits Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card credits">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Credits</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">23,500</div>
+                                    <div class="text-xs text-muted">System-wide</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-coins fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card revenue">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Revenue (MTD)</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">$4,235.75</div>
+                                    <div class="text-xs text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>15.3% from last month
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage Card -->
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow stats-card usage">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Credits Used (MTD)</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">2,180</div>
+                                    <div class="text-xs text-muted">Avg. 72.6 per day</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Credit Packages -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Credit Packages</h6>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                        <i class="fas fa-plus"></i> New Package
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Small Package -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100 credit-package-card">
+                                <button class="btn btn-sm btn-link edit-package-btn" data-bs-toggle="modal" data-bs-target="#editPackageModal" data-package-id="small">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div class="card-body text-center">
+                                    <h3 class="mb-4">Small Package</h3>
+                                    <div class="pricing mb-4">
+                                        <div class="h1 mb-0">$9.99</div>
+                                        <div class="text-muted">One-time payment</div>
+                                    </div>
+                                    <div class="credits-badge mb-4">
+                                        <span class="badge bg-primary p-2">
+                                            <i class="fas fa-coins"></i>
+                                            10 Credits
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">
+                                            <i class="fas fa-shopping-cart me-1"></i> 78 sold
+                                        </span>
+                                        <span class="text-muted">
+                                            $0.99 / credit
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent d-flex justify-content-between">
+                                    <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#packageStatsModal" data-package-id="small">
+                                        <i class="fas fa-chart-bar"></i> Stats
+                                    </button>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="smallPackageActive" checked>
+                                        <label class="form-check-label" for="smallPackageActive">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Medium Package -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100 credit-package-card featured">
+                                <button class="btn btn-sm btn-link edit-package-btn" data-bs-toggle="modal" data-bs-target="#editPackageModal" data-package-id="medium">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div class="card-body text-center">
+                                    <h3 class="mb-4">Medium Package</h3>
+                                    <div class="pricing mb-4">
+                                        <div class="promo-badge">SALE -20%</div>
+                                        <div class="text-muted text-decoration-line-through">$49.99</div>
+                                        <div class="h1 mb-0">$39.99</div>
+                                        <div class="text-muted">One-time payment</div>
+                                    </div>
+                                    <div class="credits-badge mb-4">
+                                        <span class="badge bg-primary p-2">
+                                            <i class="fas fa-coins"></i>
+                                            50 Credits
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">
+                                            <i class="fas fa-shopping-cart me-1"></i> 152 sold
+                                        </span>
+                                        <span class="text-muted">
+                                            $0.80 / credit
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent d-flex justify-content-between">
+                                    <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#packageStatsModal" data-package-id="medium">
+                                        <i class="fas fa-chart-bar"></i> Stats
+                                    </button>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="mediumPackageActive" checked>
+                                        <label class="form-check-label" for="mediumPackageActive">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Large Package -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100 credit-package-card">
+                                <button class="btn btn-sm btn-link edit-package-btn" data-bs-toggle="modal" data-bs-target="#editPackageModal" data-package-id="large">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div class="card-body text-center">
+                                    <h3 class="mb-4">Large Package</h3>
+                                    <div class="pricing mb-4">
+                                        <div class="h1 mb-0">$69.99</div>
+                                        <div class="text-muted">One-time payment</div>
+                                    </div>
+                                    <div class="credits-badge mb-4">
+                                        <span class="badge bg-primary p-2">
+                                            <i class="fas fa-coins"></i>
+                                            100 Credits
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">
+                                            <i class="fas fa-shopping-cart me-1"></i> 64 sold
+                                        </span>
+                                        <span class="text-muted">
+                                            $0.70 / credit
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent d-flex justify-content-between">
+                                    <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#packageStatsModal" data-package-id="large">
+                                        <i class="fas fa-chart-bar"></i> Stats
+                                    </button>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="largePackageActive" checked>
+                                        <label class="form-check-label" for="largePackageActive">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Credit Usage Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Credit Usage Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8 mb-4">
+                            <h6 class="small font-weight-bold text-uppercase mb-3">Credit Usage Over Time</h6>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="creditUsageChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <h6 class="small font-weight-bold text-uppercase mb-3">Usage by Package</h6>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="packageDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6 mb-4">
+                            <h6 class="small font-weight-bold text-uppercase mb-3">Most Active Users</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Credits Purchased</th>
+                                            <th>Credits Used</th>
+                                            <th>Remaining</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><a href="#">John Doe</a></td>
+                                            <td>250</td>
+                                            <td>187</td>
+                                            <td>63</td>
+                                        </tr>
+                                        <tr>
+                                            <td><a href="#">Jane Smith</a></td>
+                                            <td>150</td>
+                                            <td>122</td>
+                                            <td>28</td>
+                                        </tr>
+                                        <tr>
+                                            <td><a href="#">Mike Johnson</a></td>
+                                            <td>100</td>
+                                            <td>84</td>
+                                            <td>16</td>
+                                        </tr>
+                                        <tr>
+                                            <td><a href="#">Sarah Williams</a></td>
+                                            <td>200</td>
+                                            <td>75</td>
+                                            <td>125</td>
+                                        </tr>
+                                        <tr>
+                                            <td><a href="#">David Brown</a></td>
+                                            <td>50</td>
+                                            <td>47</td>
+                                            <td>3</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <h6 class="small font-weight-bold text-uppercase mb-3">Recent Credit Transactions</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>User</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2023-12-15</td>
+                                            <td><a href="#">John Doe</a></td>
+                                            <td><span class="badge bg-success">Purchase</span></td>
+                                            <td>+50</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-14</td>
+                                            <td><a href="#">Sarah Williams</a></td>
+                                            <td><span class="badge bg-danger">Usage</span></td>
+                                            <td>-1</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-14</td>
+                                            <td><a href="#">Mike Johnson</a></td>
+                                            <td><span class="badge bg-success">Purchase</span></td>
+                                            <td>+10</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-13</td>
+                                            <td><a href="#">Jane Smith</a></td>
+                                            <td><span class="badge bg-warning">Adjustment</span></td>
+                                            <td>+5</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-12-12</td>
+                                            <td><a href="#">David Brown</a></td>
+                                            <td><span class="badge bg-danger">Usage</span></td>
+                                            <td>-2</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Create Package Modal -->
+<div class="modal fade" id="createPackageModal" tabindex="-1" aria-labelledby="createPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPackageModalLabel">Create New Credit Package</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createPackageForm" action="{{ path('app_admin_create_credit_package') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('create_package') }}">
+                    <div class="mb-3">
+                        <label for="packageName" class="form-label">Package Name</label>
+                        <input type="text" class="form-control" id="packageName" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="packageCredits" class="form-label">Number of Credits</label>
+                            <input type="number" class="form-control" id="packageCredits" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packagePrice" class="form-label">Price (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="packagePrice" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="packageDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="packageDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="packageDiscount" class="form-label">Discount (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="packageDiscount" min="0" max="100" value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packageOrder" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="packageOrder" min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="packageIsFeatured">
+                        <label class="form-check-label" for="packageIsFeatured">
+                            Feature this package
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="packageIsActive" checked>
+                        <label class="form-check-label" for="packageIsActive">
+                            Package is active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveNewPackageBtn" onclick="document.getElementById('createPackageForm').submit()">Create Package</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div class="modal fade" id="editPackageModal" tabindex="-1" aria-labelledby="editPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPackageModalLabel">Edit Credit Package</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPackageForm" action="{{ path('app_admin_edit_credit_package') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('edit_package') }}">
+                    <input type="hidden" id="editPackageId">
+                    <div class="mb-3">
+                        <label for="editPackageName" class="form-label">Package Name</label>
+                        <input type="text" class="form-control" id="editPackageName" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editPackageCredits" class="form-label">Number of Credits</label>
+                            <input type="number" class="form-control" id="editPackageCredits" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPackagePrice" class="form-label">Price (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editPackagePrice" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPackageDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editPackageDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editPackageDiscount" class="form-label">Discount (%)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editPackageDiscount" min="0" max="100" value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPackageOrder" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="editPackageOrder" min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editPackageIsFeatured">
+                        <label class="form-check-label" for="editPackageIsFeatured">
+                            Feature this package
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editPackageIsActive" checked>
+                        <label class="form-check-label" for="editPackageIsActive">
+                            Package is active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger me-auto" id="deletePackageBtn" onclick="submitDeletePackageForm()">Delete Package</button>
+                <button type="button" class="btn btn-primary" id="savePackageChangesBtn" onclick="document.getElementById('editPackageForm').submit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credits Adjustment Modal -->
+<div class="modal fade" id="creditsAdjustmentModal" tabindex="-1" aria-labelledby="creditsAdjustmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="creditsAdjustmentModalLabel">Adjust User Credits</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="creditsAdjustmentForm" action="{{ path('app_admin_adjust_user_credits_from_credits_page') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('adjust_credits') }}">
+                    <div class="mb-3">
+                        <label for="adjustmentUser" class="form-label">User</label>
+                        <select class="form-select" id="adjustmentUser" required>
+                            <option value="">Select a user...</option>
+                            <option value="1">John Doe - john@example.com</option>
+                            <option value="2">Jane Smith - jane@example.com</option>
+                            <option value="3">Mike Johnson - mike@example.com</option>
+                            <option value="4">Sarah Williams - sarah@example.com</option>
+                            <option value="5">David Brown - david@example.com</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="currentCredits" class="form-label">Current Credits</label>
+                        <input type="text" class="form-control" id="currentCredits" readonly value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustmentType" class="form-label">Adjustment Type</label>
+                        <select class="form-select" id="adjustmentType">
+                            <option value="add">Add Credits</option>
+                            <option value="subtract">Remove Credits</option>
+                            <option value="set">Set Exact Value</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustmentAmount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="adjustmentAmount" min="0" value="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustmentReason" class="form-label">Reason</label>
+                        <textarea class="form-control" id="adjustmentReason" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adjustmentNewTotal" class="form-label">New Total Credits</label>
+                        <input type="text" class="form-control" id="adjustmentNewTotal" readonly value="0">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="notifyUser">
+                        <label class="form-check-label" for="notifyUser">
+                            Notify user via email
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAdjustmentBtn" onclick="document.getElementById('creditsAdjustmentForm').submit()">Save Adjustment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credit Promotion Modal -->
+<div class="modal fade" id="creditPromotionModal" tabindex="-1" aria-labelledby="creditPromotionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="creditPromotionModalLabel">Create Credit Promotion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="creditPromotionForm" action="{{ path('app_admin_create_credit_promotion') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('create_promotion') }}">
+                    <div class="mb-3">
+                        <label for="promotionName" class="form-label">Promotion Name</label>
+                        <input type="text" class="form-control" id="promotionName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promotionType" class="form-label">Promotion Type</label>
+                        <select class="form-select" id="promotionType">
+                            <option value="discount">Percentage Discount</option>
+                            <option value="bonus">Bonus Credits</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 promotion-discount">
+                        <label for="discountPercentage" class="form-label">Discount Percentage</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="discountPercentage" min="1" max="100" value="10" required>
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="mb-3 promotion-bonus d-none">
+                        <label for="bonusCredits" class="form-label">Bonus Credits</label>
+                        <input type="number" class="form-control" id="bonusCredits" min="1" value="5" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promotionPackages" class="form-label">Apply to Packages</label>
+                        <select class="form-select" id="promotionPackages" multiple>
+                            <option value="small">Small Package</option>
+                            <option value="medium">Medium Package</option>
+                            <option value="large">Large Package</option>
+                        </select>
+                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple packages</small>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="promotionStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="promotionStartDate" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="promotionEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="promotionEndDate" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promotionCode" class="form-label">Promo Code (Optional)</label>
+                        <input type="text" class="form-control" id="promotionCode">
+                        <small class="form-text text-muted">Leave blank to apply automatically</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="savePromotionBtn" onclick="document.getElementById('creditPromotionForm').submit()">Create Promotion</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Package Stats Modal -->
+<div class="modal fade" id="packageStatsModal" tabindex="-1" aria-labelledby="packageStatsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="packageStatsModalLabel">Package Statistics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="packageStatsTitle">Small Package</h4>
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Total Sales</h6>
+                                <div class="h3 mb-0">78</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Revenue</h6>
+                                <div class="h3 mb-0">$779.22</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Credits Sold</h6>
+                                <div class="h3 mb-0">780</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="small text-muted mb-2">Conversion Rate</h6>
+                                <div class="h3 mb-0">7.8%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8 mb-4">
+                        <h6 class="small font-weight-bold text-uppercase mb-3">Sales Over Time</h6>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="packageSalesChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <h6 class="small font-weight-bold text-uppercase mb-3">Recent Purchases</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2023-12-15</td>
+                                        <td>John D.</td>
+                                        <td>$9.99</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-12-14</td>
+                                        <td>Sarah W.</td>
+                                        <td>$9.99</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-12-14</td>
+                                        <td>Mike J.</td>
+                                        <td>$9.99</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-12-13</td>
+                                        <td>Jane S.</td>
+                                        <td>$9.99</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2023-12-12</td>
+                                        <td>David B.</td>
+                                        <td>$9.99</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Export Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle delete package form submission
+    window.submitDeletePackageForm = function() {
+        const packageId = document.getElementById('editPackageId').value;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ path('app_admin_delete_credit_package', {'id': 'PACKAGE_ID'}) }}'.replace('PACKAGE_ID', packageId);
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_csrf_token';
+        csrfToken.value = '{{ csrf_token('delete_package') }}';
+        form.appendChild(csrfToken);
+        
+        // Add package ID
+        const packageIdInput = document.createElement('input');
+        packageIdInput.type = 'hidden';
+        packageIdInput.name = 'packageId';
+        packageIdInput.value = packageId;
+        form.appendChild(packageIdInput);
+        
+        // Add form to document, submit it, and remove it
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    };
+    // Credit Usage Chart
+    const ctxUsage = document.getElementById('creditUsageChart').getContext('2d');
+    const usageChart = new Chart(ctxUsage, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Credits Used',
+                data: [350, 420, 580, 720, 850, 910, 1050, 1150, 1320, 1650, 1850, 2180],
+                borderColor: '#36b9cc',
+                backgroundColor: 'rgba(54, 185, 204, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: 'Credits Purchased',
+                data: [500, 550, 700, 900, 1000, 1200, 1400, 1600, 1800, 2100, 2400, 2800],
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Credits'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Package Distribution Chart
+    const ctxDist = document.getElementById('packageDistributionChart').getContext('2d');
+    const distChart = new Chart(ctxDist, {
+        type: 'doughnut',
+        data: {
+            labels: ['Small Package', 'Medium Package', 'Large Package'],
+            datasets: [{
+                data: [25, 55, 20],
+                backgroundColor: ['#4e73df', '#1cc88a', '#f6c23e'],
+                hoverBackgroundColor: ['#2e59d9', '#17a673', '#f4b619'],
+                hoverBorderColor: "rgba(234, 236, 244, 1)",
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            cutout: '70%'
+        }
+    });
+    
+    // Package Sales Chart (for modal)
+    const ctxSales = document.getElementById('packageSalesChart').getContext('2d');
+    const salesChart = new Chart(ctxSales, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Package Sales',
+                data: [4, 5, 7, 8, 6, 9, 7, 8, 7, 5, 6, 6],
+                backgroundColor: '#4e73df'
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Sales'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Handle edit package modal
+    const editPackageModal = document.getElementById('editPackageModal');
+    if (editPackageModal) {
+        editPackageModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const packageId = button.getAttribute('data-package-id');
+            document.getElementById('editPackageId').value = packageId;
+            
+            // Fill in form with package data (this would come from backend in real app)
+            if (packageId === 'small') {
+                document.getElementById('editPackageName').value = 'Small Package';
+                document.getElementById('editPackageCredits').value = '10';
+                document.getElementById('editPackagePrice').value = '9.99';
+                document.getElementById('editPackageDescription').value = 'Basic package for small businesses';
+                document.getElementById('editPackageDiscount').value = '0';
+                document.getElementById('editPackageOrder').value = '1';
+                document.getElementById('editPackageIsFeatured').checked = false;
+            } else if (packageId === 'medium') {
+                document.getElementById('editPackageName').value = 'Medium Package';
+                document.getElementById('editPackageCredits').value = '50';
+                document.getElementById('editPackagePrice').value = '39.99';
+                document.getElementById('editPackageDescription').value = 'Popular package with great value';
+                document.getElementById('editPackageDiscount').value = '20';
+                document.getElementById('editPackageOrder').value = '2';
+                document.getElementById('editPackageIsFeatured').checked = true;
+            } else if (packageId === 'large') {
+                document.getElementById('editPackageName').value = 'Large Package';
+                document.getElementById('editPackageCredits').value = '100';
+                document.getElementById('editPackagePrice').value = '69.99';
+                document.getElementById('editPackageDescription').value = 'Best value for power users';
+                document.getElementById('editPackageDiscount').value = '0';
+                document.getElementById('editPackageOrder').value = '3';
+                document.getElementById('editPackageIsFeatured').checked = false;
+            }
+            
+            // Update modal title
+            document.getElementById('editPackageModalLabel').textContent = 'Edit ' + document.getElementById('editPackageName').value;
+        });
+    }
+    
+    // Handle package stats modal
+    const packageStatsModal = document.getElementById('packageStatsModal');
+    if (packageStatsModal) {
+        packageStatsModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const packageId = button.getAttribute('data-package-id');
+            
+            // Update modal title based on package
+            if (packageId === 'small') {
+                document.getElementById('packageStatsTitle').textContent = 'Small Package Statistics';
+            } else if (packageId === 'medium') {
+                document.getElementById('packageStatsTitle').textContent = 'Medium Package Statistics';
+            } else if (packageId === 'large') {
+                document.getElementById('packageStatsTitle').textContent = 'Large Package Statistics';
+            }
+            
+            // In a real app, you would load the chart data from the server here
+        });
+    }
+    
+    // Handle promotion type toggle
+    const promotionType = document.getElementById('promotionType');
+    if (promotionType) {
+        promotionType.addEventListener('change', function() {
+            const discountFields = document.querySelector('.promotion-discount');
+            const bonusFields = document.querySelector('.promotion-bonus');
+            
+            if (this.value === 'discount') {
+                discountFields.classList.remove('d-none');
+                bonusFields.classList.add('d-none');
+            } else {
+                discountFields.classList.add('d-none');
+                bonusFields.classList.remove('d-none');
+            }
+        });
+    }
+    
+    // Handle user selection for credit adjustment
+    const adjustmentUser = document.getElementById('adjustmentUser');
+    if (adjustmentUser) {
+        adjustmentUser.addEventListener('change', function() {
+            // In a real app, this would fetch the user's current credits from the server
+            let currentCredits = 0;
+            
+            if (this.value === '1') currentCredits = 63;
+            else if (this.value === '2') currentCredits = 28;
+            else if (this.value === '3') currentCredits = 16;
+            else if (this.value === '4') currentCredits = 125;
+            else if (this.value === '5') currentCredits = 3;
+            
+            document.getElementById('currentCredits').value = currentCredits;
+            updateNewCreditsTotal();
+        });
+    }
+    
+    // Handle adjustment type and amount changes
+    const adjustmentType = document.getElementById('adjustmentType');
+    const adjustmentAmount = document.getElementById('adjustmentAmount');
+    
+    if (adjustmentType && adjustmentAmount) {
+        adjustmentType.addEventListener('change', updateNewCreditsTotal);
+        adjustmentAmount.addEventListener('input', updateNewCreditsTotal);
+    }
+    
+    function updateNewCreditsTotal() {
+        const currentCredits = parseInt(document.getElementById('currentCredits').value) || 0;
+        const amount = parseInt(adjustmentAmount.value) || 0;
+        let newTotal = currentCredits;
+        
+        if (adjustmentType.value === 'add') {
+            newTotal = currentCredits + amount;
+        } else if (adjustmentType.value === 'subtract') {
+            newTotal = Math.max(0, currentCredits - amount);
+        } else if (adjustmentType.value === 'set') {
+            newTotal = amount;
+        }
+        
+        document.getElementById('adjustmentNewTotal').value = newTotal;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Set the base directory
+    RewriteBase /ecommerce-tools/
+    
+    # If the requested file/directory exists in public/, serve it directly
+    RewriteCond %{DOCUMENT_ROOT}/ecommerce-tools/public/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/ecommerce-tools/public/$1 -d
+    RewriteRule ^(.*)$ public/$1 [L]
+    
+    # If the request is not for an existing file/directory, send to front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Follow symbolic links
+Options +FollowSymLinks

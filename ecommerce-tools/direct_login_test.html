@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"], 
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        #checkStatus {
+            margin-top: 10px;
+            background-color: #198754;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            height: 150px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Direct Login Test</h1>
+        
+        <form id="loginForm" action="http://127.0.0.1:8000/login" method="post">
+            <div class="form-group">
+                <label for="username">Email:</label>
+                <input type="text" id="username" name="_username" value="sellersbay@gmail.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="_password" value="powder04">
+            </div>
+            
+            <div class="form-group">
+                <button type="submit">Sign in</button>
+            </div>
+        </form>
+        
+        <div class="status">
+            <h3>Login Status</h3>
+            <button id="checkStatus">Check Login Status</button>
+            <div id="statusResult"></div>
+        </div>
+        
+        <div class="log">
+            <h3>Log</h3>
+            <div id="logOutput"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Log function
+        function log(message) {
+            const logDiv = document.getElementById('logOutput');
+            logDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Handle login form submit
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            log('Submitting login form...');
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                if (response.redirected) {
+                    log(`Redirected to: ${response.url}`);
+                    
+                    if (response.url.includes('dashboard')) {
+                        log('SUCCESS: Redirected to dashboard!');
+                    } else {
+                        log('Login failed: Not redirected to dashboard');
+                    }
+                } else {
+                    log('Login failed: No redirect received');
+                    
+                    // Try to parse the response to check for error messages
+                    const text = await response.text();
+                    if (text.includes('Invalid credentials')) {
+                        log('Error: Invalid credentials');
+                    } else if (text.includes('CSRF')) {
+                        log('Error: CSRF token issue');
+                    }
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        });
+        
+        // Check login status
+        document.getElementById('checkStatus').addEventListener('click', async function() {
+            log('Checking login status...');
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/login-check', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                log(`Status check response: ${JSON.stringify(data)}`);
+                
+                const statusDiv = document.getElementById('statusResult');
+                if (data.logged_in) {
+                    statusDiv.innerHTML = `<div style="color: green;">Logged in as: ${data.user.email}</div>`;
+                } else {
+                    statusDiv.innerHTML = '<div style="color: red;">Not logged in</div>';
+                }
+            } catch (error) {
+                log(`Error checking status: ${error.message}`);
+                document.getElementById('statusResult').innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Initial log
+        log('Page loaded. Ready to test login.');
+    </script>
+</body>
+</html>

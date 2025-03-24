@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+</head>
+<body>
+    <h2>Login Test</h2>
+    <form action="http://127.0.0.1:8000/login" method="post">
+        <input type="hidden" name="_csrf_token" value="test_token">
+        <div>
+            <label for="username">Email:</label>
+            <input type="text" id="username" name="_username" value="sellersbay@gmail.com">
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="_password" value="powder04">
+        </div>
+        <div>
+            <input type="checkbox" id="remember_me" name="_remember_me" checked>
+            <label for="remember_me">Remember me</label>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    <script>
+        // Auto-submit the form when the page loads
+        window.onload = function() {
+            document.querySelector('form').submit();
+        }
+    </script>
+</body>
+</html>

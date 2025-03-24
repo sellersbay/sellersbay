@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Product - RoboSEO{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h1 class="h3 mb-0">Create New Product</h1>
+                </div>
+                <div class="card-body">
+                    {% for flash_error in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+                    {% endfor %}
+
+                    {% for flash_success in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+                    {% endfor %}
+
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle"></i> Getting Started</h5>
+                        <p class="mb-0">
+                            Enter your product details below. After saving, you can use our AI tools to generate 
+                            SEO-optimized content for your product descriptions.
+                        </p>
+                    </div>
+
+                    {{ include('product/_form.html.twig', {
+                        button_label: 'Create Product'
+                    }) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

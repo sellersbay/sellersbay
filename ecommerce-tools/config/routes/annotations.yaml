@@ -1,0 +1,4 @@
+# filepath: c:\Users\rober\projects\roboseo2\config\routes\annotations.yaml
+controllers:
+    resource: ../../src/Controller/
+    type: attribute

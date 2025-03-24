@@ -1,0 +1,49 @@
+<!-- Footer -->
+<footer class="bg-light mt-5 py-4">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <h5 class="text-primary">Seller's Bay</h5>
+                <p class="text-muted">Empowering e-commerce merchants with AI-powered tools and seamless WooCommerce integration.</p>
+                <div class="d-flex gap-2">
+                    <a href="#" class="text-primary"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-primary"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-primary"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" class="text-primary"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <h6 class="text-primary">Quick Links</h6>
+                <ul class="list-unstyled">
+                    <li><a href="http://localhost/sellersbay/" class="text-decoration-none text-muted">Home</a></li>
+                    <li><a href="{{ path('app_dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                    <li><a href="{{ path('app_products') }}" class="text-decoration-none text-muted">Products</a></li>
+                    <li><a href="{{ path('app_support') }}" class="text-decoration-none text-muted">Support</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <h6 class="text-primary">Resources</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="text-decoration-none text-muted">Documentation</a></li>
+                    <li><a href="#" class="text-decoration-none text-muted">API</a></li>
+                    <li><a href="#" class="text-decoration-none text-muted">Blog</a></li>
+                    <li><a href="#" class="text-decoration-none text-muted">Tutorials</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-primary">Contact Us</h6>
+                <ul class="list-unstyled text-muted">
+                    <li><i class="fas fa-envelope me-2"></i> support@sellersbay.com</li>
+                    <li><i class="fas fa-phone me-2"></i> (123) 456-7890</li>
+                    <li><i class="fas fa-map-marker-alt me-2"></i> 123 E-Commerce St, Digital City</li>
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-12 text-center">
+                <p class="text-muted mb-0">© {{ "now"|date("Y") }} Seller's Bay. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</footer>
