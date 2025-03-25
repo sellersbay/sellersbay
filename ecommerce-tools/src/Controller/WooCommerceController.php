@@ -882,8 +882,9 @@ class WooCommerceController extends AbstractController
             
             // If product has image alt text, update it
             if ($product->getImageAltText()) {
-                // Get first image ID from original data if available
                 $originalData = $product->getOriginalData();
+                
+                // First try with image ID if available
                 if (!empty($originalData['images'][0]['id'])) {
                     $imageId = $originalData['images'][0]['id'];
                     $updateData['images'] = [
@@ -892,6 +893,25 @@ class WooCommerceController extends AbstractController
                             'alt' => $product->getImageAltText()
                         ]
                     ];
+                } 
+                // Even if no image ID is available, still include alt text in the update
+                // This ensures alt text is always exported regardless of image structure
+                else {
+                    // Add alt text as a custom meta data field to ensure it gets exported
+                    $updateData['meta_data'][] = [
+                        'key' => '_product_image_alt_text',
+                        'value' => $product->getImageAltText()
+                    ];
+                    
+                    // If there's an image but no ID, try sending alt text with the src
+                    if (!empty($originalData['images'][0]['src'])) {
+                        $updateData['images'] = [
+                            [
+                                'src' => $originalData['images'][0]['src'],
+                                'alt' => $product->getImageAltText()
+                            ]
+                        ];
+                    }
                 }
             }
             

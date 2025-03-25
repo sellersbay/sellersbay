@@ -170,6 +170,12 @@
                                     <h6>Short Description</h6>
                                     <p>{{ product.shortDescription }}</p>
 
+                                    <h6>Meta Title</h6>
+                                    <p>{{ product.metaTitle }}</p>
+                                    
+                                    <h6>Target Keyphrase</h6>
+                                    <p>{{ product.targetKeyphrase }}</p>
+                                    
                                     <h6>Meta Description</h6>
                                     <p>{{ product.metaDescription }}</p>
 
@@ -186,11 +192,16 @@
                                 </div>
                                 <div class="card-body">
                                     <div id="generationProgress" class="d-none">
-                                        <div class="text-center py-4">
-                                            <div class="spinner-border text-primary mb-3" role="status">
-                                                <span class="visually-hidden">Generating...</span>
+                                        <div class="py-4">
+                                            <h5 class="text-center mb-3" id="generationStatus">Generating SEO content...</h5>
+                                            <div class="progress mb-3" style="height: 24px;">
+                                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                                    role="progressbar" style="width: 0%" 
+                                                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
                                             </div>
-                                            <p class="mb-0" id="generationStatus">Generating SEO content...</p>
+                                            <p class="text-muted text-center small mb-0" id="generationStepDetail">
+                                                Initializing AI model...
+                                            </p>
                                         </div>
                                     </div>
 
@@ -243,6 +254,16 @@
                                         <div class="mb-3">
                                             <label class="form-label">Short Description</label>
                                             <textarea class="form-control" id="generatedShortDescription" rows="2">{{ edit_mode ? product.shortDescription : '' }}</textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Meta Title</label>
+                                            <input type="text" class="form-control" id="generatedMetaTitle" value="{{ edit_mode ? product.metaTitle : '' }}">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Target Keyphrase</label>
+                                            <input type="text" class="form-control" id="generatedTargetKeyphrase" value="{{ edit_mode ? product.targetKeyphrase : '' }}">
                                         </div>
 
                                         <div class="mb-3">
@@ -395,6 +416,14 @@
                                                     <td>N/A</td>
                                                 </tr>
                                                 <tr>
+                                                    <th scope="row">Meta Title</th>
+                                                    <td id="previewMetaTitle"></td>
+                                                </tr>
+                                                <tr>
+                                                    <th scope="row">Target Keyphrase</th>
+                                                    <td id="previewTargetKeyphrase"></td>
+                                                </tr>
+                                                <tr>
                                                     <th scope="row">Meta Description</th>
                                                     <td id="previewMetaDescription"></td>
                                                 </tr>
@@ -416,6 +445,118 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Basic vs Premium AI Services</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info bg-opacity-10">
+                                    <h5 class="card-title mb-0"><i class="fas fa-robot me-2"></i> Basic AI Service</h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="mb-3">Features:</h6>
+                                    <ul class="list-group mb-3">
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Target Keyphrase Generation
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Meta Title Creation
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Product Descriptions
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Short Descriptions
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Meta Descriptions
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Image Alt Text
+                                        </li>
+                                    </ul>
+                                    <p class="card-text">
+                                        <i class="fas fa-info-circle text-info me-2"></i>
+                                        Uses GPT-3.5 Turbo model (0.5 credits per generation)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary bg-opacity-10">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-crown text-primary me-2"></i> Premium AI Service
+                                        {% if is_granted('ROLE_PREMIUM') %}
+                                            <span class="badge bg-success ms-2">Available</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">Upgrade Required</span>
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="mb-3">All Basic Features Plus:</h6>
+                                    <ul class="list-group mb-3">
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Enhanced Prompts
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-star text-warning me-2"></i> SEO Keywords Extraction
+                                                <span class="ms-auto badge bg-primary">Premium</span>
+                                            </div>
+                                            <div class="text-muted small mt-1">
+                                                Generates a comprehensive list of 15-20 SEO keywords with search intent grouping, helping you target the right audience and improve search rankings.
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-star text-warning me-2"></i> Social Media Post Creation
+                                                <span class="ms-auto badge bg-primary">Premium</span>
+                                            </div>
+                                            <div class="text-muted small mt-1">
+                                                Creates platform-optimized social media posts to promote your products with engaging content, hashtags, and calls-to-action.
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Custom Tone Selection
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Competitor URL Analysis
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Target Keywords Integration
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                    </ul>
+                                    <p class="card-text">
+                                        <i class="fas fa-bolt text-warning me-2"></i>
+                                        Uses GPT-4 Turbo model (1 credit per generation)
+                                    </p>
+                                    {% if not is_granted('ROLE_PREMIUM') %}
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ path('app_subscription_plans') }}" class="btn btn-primary">
+                                                <i class="fas fa-crown me-2"></i> Upgrade to Premium
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -457,12 +598,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get current content values
         const description = hiddenTextarea.value;
         const shortDescription = document.getElementById('generatedShortDescription').value;
+        const metaTitle = document.getElementById('generatedMetaTitle').value;
+        const targetKeyphrase = document.getElementById('generatedTargetKeyphrase').value;
         const metaDescription = document.getElementById('generatedMetaDescription').value;
         const imageAltText = document.getElementById('generatedImageAltText').value;
         
         // Update preview modal with current content
         document.getElementById('previewDescription').innerHTML = description;
         document.getElementById('previewShortDescription').innerHTML = shortDescription;
+        document.getElementById('previewMetaTitle').textContent = metaTitle;
+        document.getElementById('previewTargetKeyphrase').textContent = targetKeyphrase;
         document.getElementById('previewMetaDescription').textContent = metaDescription;
         document.getElementById('previewImageAlt').textContent = imageAltText;
         
@@ -507,33 +652,112 @@ document.addEventListener('DOMContentLoaded', function() {
         editorContent.addEventListener('input', updateHiddenContent);
         editorContent.addEventListener('blur', updateHiddenContent);
     }
+    const progressBar = document.getElementById('progressBar');
+    const generationStepDetail = document.getElementById('generationStepDetail');
+    let progressInterval;
+    
+    function updateProgressBar(value) {
+        progressBar.style.width = value + '%';
+        progressBar.setAttribute('aria-valuenow', value);
+        progressBar.textContent = value + '%';
+    }
+    
     function showProgress() {
         initialState.classList.add('d-none');
         generationProgress.classList.remove('d-none');
         generatedContent.classList.add('d-none');
+        
+        // Reset progress bar
+        updateProgressBar(0);
+        
+        // Get processing mode (standard or premium)
+        const isPremium = document.querySelector('input[name="processingMode"]:checked')?.value === 'premium';
+        const usePremiumFeatures = document.getElementById('usePremiumFeatures') ? 
+            document.getElementById('usePremiumFeatures').checked : false;
+        
+        // Set max time based on processing mode
+        const maxTime = isPremium ? 40000 : 20000; // 40 seconds for premium, 20 for standard
+        
+        // Define the steps for progress simulation
+        const steps = [
+            { percent: 10, message: "Initializing AI model..." },
+            { percent: 20, message: "Analyzing product data..." },
+            { percent: 30, message: "Generating target keyphrases..." },
+            { percent: 40, message: "Creating meta title..." },
+            { percent: 50, message: "Writing product description..." },
+            { percent: 60, message: "Generating short description..." },
+            { percent: 70, message: "Creating meta description..." },
+            { percent: 80, message: "Generating image alt text..." }
+        ];
+        
+        // Add premium-specific steps if applicable
+        if (isPremium && usePremiumFeatures) {
+            steps.push(
+                { percent: 85, message: "Extracting SEO keywords..." },
+                { percent: 90, message: "Creating social media content..." },
+                { percent: 95, message: "Optimizing for premium quality..." }
+            );
+        }
+        
+        // Calculate time per step
+        const timePerStep = maxTime / steps.length;
+        let currentStep = 0;
+        
+        // Clear any existing interval
+        if (progressInterval) clearInterval(progressInterval);
+        
+        // Start progress simulation
+        progressInterval = setInterval(() => {
+            if (currentStep < steps.length) {
+                const step = steps[currentStep];
+                updateProgressBar(step.percent);
+                generationStepDetail.textContent = step.message;
+                currentStep++;
+            } else {
+                // If we've gone through all steps but haven't received a response yet,
+                // keep progress bar moving slowly to 99%
+                const currentValue = parseInt(progressBar.getAttribute('aria-valuenow'));
+                if (currentValue < 99) {
+                    updateProgressBar(Math.min(currentValue + 1, 99));
+                    generationStepDetail.textContent = "Finalizing and optimizing content...";
+                }
+            }
+        }, timePerStep / 2); // Divide by 2 to make steps more granular
     }
 
     function showContent(content) {
-        // Update the editor content
-        editorContent.innerHTML = content.description || '';
-        updateHiddenContent(); // Update hidden textarea
-        document.getElementById('generatedShortDescription').value = content.shortDescription || '';
-        document.getElementById('generatedMetaDescription').value = content.metaDescription || '';
-        document.getElementById('generatedImageAltText').value = content.imageAltText || '';
+        // Clear the progress interval
+        if (progressInterval) clearInterval(progressInterval);
         
-        {% if is_granted('ROLE_PREMIUM') %}
-        // Set premium-only content if available
-        if (document.getElementById('generatedSeoKeywords')) {
-            document.getElementById('generatedSeoKeywords').value = content.seoKeywords || '';
-        }
+        // Complete the progress bar
+        updateProgressBar(100);
+        generationStepDetail.textContent = "Content generation complete!";
         
-        if (document.getElementById('generatedSocialMediaPost')) {
-            document.getElementById('generatedSocialMediaPost').value = content.socialMediaPost || '';
-        }
-        {% endif %}
+        // Short delay to show 100% completion before showing content
+        setTimeout(() => {
+            // Update the editor content
+            editorContent.innerHTML = content.description || '';
+            updateHiddenContent(); // Update hidden textarea
+            document.getElementById('generatedShortDescription').value = content.shortDescription || '';
+            document.getElementById('generatedMetaTitle').value = content.metaTitle || '';
+            document.getElementById('generatedTargetKeyphrase').value = content.targetKeyphrase || '';
+            document.getElementById('generatedMetaDescription').value = content.metaDescription || '';
+            document.getElementById('generatedImageAltText').value = content.imageAltText || '';
+            
+            {% if is_granted('ROLE_PREMIUM') %}
+            // Set premium-only content if available
+            if (document.getElementById('generatedSeoKeywords')) {
+                document.getElementById('generatedSeoKeywords').value = content.seoKeywords || '';
+            }
+            
+            if (document.getElementById('generatedSocialMediaPost')) {
+                document.getElementById('generatedSocialMediaPost').value = content.socialMediaPost || '';
+            }
+            {% endif %}
 
-        generationProgress.classList.add('d-none');
-        generatedContent.classList.remove('d-none');
+            generationProgress.classList.add('d-none');
+            generatedContent.classList.remove('d-none');
+        }, 500);
     }
 
     function generateContent() {
@@ -597,6 +821,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const content = {
                 description: descriptionHtml,
                 shortDescription: document.getElementById('generatedShortDescription').value || '',
+                metaTitle: document.getElementById('generatedMetaTitle').value || '',
+                targetKeyphrase: document.getElementById('generatedTargetKeyphrase').value || '',
                 metaDescription: document.getElementById('generatedMetaDescription').value || '',
                 imageAltText: document.getElementById('generatedImageAltText').value || ''
             };

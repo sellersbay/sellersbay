@@ -177,9 +177,20 @@ Product Name: {$product->getName()}
 Original Description: {$product->getDescription()}
 
 Requirements:
-- Write in a professional, engaging tone
+- Write in a professional, engaging tone in a human-like manner
+- Do not include the target keywords more than 3 times
+- Include the target keywords in the first 100 words
+- Use natural language that converts
 - Format text with html tags for headings, lists, etc.
-- Include <h2>Features:</h2> with a bullet list of main features under it
+- User <h2></h2> first heading for the product name
+- Use <h3></h3> for main sections
+- Important: Do not use quotation marks around Image Alt Text or Meta Description
+- Include a <h4></h4> for the FAQ section
+- Break into manageable sections with subheadings
+- Important: Optimize product description for AI and voice search
+- Use structured data-friendly formatting
+- Do not add a <h1></h1> tag
+- Include <p><stong>Features:</strong></p> with a bullet list of main features under it
 - Highlight unique selling points 
 - Focus on benefits to the customer
 - Use active voice
@@ -211,10 +222,10 @@ PROMPT;
             $premiumAddition = <<<PREMIUM
 
 Premium Requirements:
-- A/B test ready (provide two alternatives)
 - Optimize for emotional impact and conversion
 - Use psychological triggers
 - Match the tone: {$tone}
+- Create a single, high-impact description without formatting or quotes
 PREMIUM;
         }
         
@@ -231,6 +242,7 @@ Requirements:
 - Focus on benefits
 - Use active voice
 - Make it attention-grabbing
+- IMPORTANT: Provide a single, clean description with no formatting (no 'A:' or 'B:' prefixes, no quotation marks)
 {$premiumAddition}
 
 Short Description:
@@ -370,8 +382,8 @@ PROMPT;
         
         // Enhanced system prompt for premium features
         $systemPrompt = $usePremiumFeatures 
-            ? 'You are an elite e-commerce copywriter and SEO specialist with expertise in conversion optimization. Your content consistently ranks #1 in search results and achieves conversion rates 30% above industry average. Create content that outperforms competitors by addressing user intent perfectly while maintaining SEO best practices.'
-            : 'You are an expert e-commerce copywriter and SEO specialist. Your task is to generate optimized content that drives conversions while maintaining SEO best practices.';
+            ? 'You are an elite e-commerce copywriter and SEO specialist with expertise in conversion optimization. Your content consistently ranks #1 in search results and achieves conversion rates 30% above industry average. Create content that outperforms competitors by addressing user intent perfectly while maintaining SEO best practices. Never use A/B test formatting in your responses.'
+            : 'You are an expert e-commerce copywriter and SEO specialist. Your task is to generate optimized content that drives conversions while maintaining SEO best practices. Never use A/B test formatting in your responses.';
         
         $response = $this->httpClient->request('POST', 'https://api.openai.com/v1/chat/completions', [
             'headers' => [
@@ -396,6 +408,23 @@ PROMPT;
         ]);
 
         $data = $response->toArray();
-        return $data['choices'][0]['message']['content'] ?? '';
+        $content = $data['choices'][0]['message']['content'] ?? '';
+        
+        // Process the short description to remove A/B formatting if it exists
+        if (strpos($prompt, 'Short Description:') !== false) {
+            // Replace A/B test format patterns
+            $content = preg_replace('/^A:\s*\"?(.*?)\"?\s*B:\s*\"?(.*?)\"?$/ms', '$1', $content);
+            $content = preg_replace('/^Option A:\s*\"?(.*?)\"?\s*Option B:\s*\"?(.*?)\"?$/ms', '$1', $content);
+            $content = preg_replace('/^Alternative 1:\s*\"?(.*?)\"?\s*Alternative 2:\s*\"?(.*?)\"?$/ms', '$1', $content);
+            
+            // Remove any remaining quotation marks
+            $content = str_replace('"', '', $content);
+            $content = str_replace("'", '', $content);
+            
+            // Trim whitespace
+            $content = trim($content);
+        }
+        
+        return $content;
     }
 }

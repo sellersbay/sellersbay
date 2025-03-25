@@ -17,23 +17,86 @@
                         Your current balance: {{ app.user.credits }} credits
                     </p>
 
-                    <div class="alert alert-info mx-auto" style="max-width: 500px;">
+                    <div class="alert alert-info mx-auto" style="max-width: 600px;">
                         <h5 class="alert-heading"><i class="fas fa-info-circle"></i> About Credits</h5>
-                        <p class="mb-0">
-                            Each content generation uses 1 credit. Credits are used to generate:
+                        <p>
+                            Credits are used to generate AI content with different costs based on the service level:
                         </p>
-                        <ul class="list-unstyled mt-2 mb-0">
-                            <li><i class="fas fa-check text-success"></i> SEO-optimized product descriptions</li>
-                            <li><i class="fas fa-check text-success"></i> Meta descriptions</li>
-                            <li><i class="fas fa-check text-success"></i> Short descriptions</li>
-                            <li><i class="fas fa-check text-success"></i> Image alt text</li>
-                        </ul>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card mb-3 border-info">
+                                    <div class="card-header bg-info bg-opacity-10">
+                                        <h6 class="mb-0"><i class="fas fa-robot me-2"></i> Basic Service</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">
+                                            <strong>0.5 credits</strong> per generation
+                                        </p>
+                                        <ul class="list-unstyled mb-0">
+                                            <li><i class="fas fa-check text-success"></i> Product descriptions</li>
+                                            <li><i class="fas fa-check text-success"></i> Meta descriptions</li>
+                                            <li><i class="fas fa-check text-success"></i> Short descriptions</li>
+                                            <li><i class="fas fa-check text-success"></i> Image alt text</li>
+                                            <li><i class="fas fa-check text-success"></i> Target keyphrase</li>
+                                            <li><i class="fas fa-check text-success"></i> Meta title</li>
+                                        </ul>
+                                        <div class="small text-muted mt-2">
+                                            Uses GPT-3.5 Turbo model
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3 border-primary">
+                                    <div class="card-header bg-primary bg-opacity-10">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-crown text-primary me-2"></i> Premium Service
+                                            {% if is_granted('ROLE_PREMIUM') %}
+                                                <span class="badge bg-success ms-2">Available</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary ms-2">Upgrade Required</span>
+                                            {% endif %}
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">
+                                            <strong>1 credit</strong> per generation
+                                        </p>
+                                        <p class="small">All basic features plus:</p>
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="mb-2">
+                                                <i class="fas fa-star text-warning"></i> <strong>SEO Keywords</strong>
+                                                <div class="text-muted small">
+                                                    A comprehensive list of 15-20 targeted keywords grouped by search intent to improve your product's search visibility.
+                                                </div>
+                                            </li>
+                                            <li class="mb-2">
+                                                <i class="fas fa-star text-warning"></i> <strong>Social Media Posts</strong>
+                                                <div class="text-muted small">
+                                                    Ready-to-use social media content with engaging copy, hashtags, and calls-to-action optimized for platforms like Instagram.
+                                                </div>
+                                            </li>
+                                            <li><i class="fas fa-star text-warning"></i> Custom Tone</li>
+                                            <li><i class="fas fa-star text-warning"></i> Enhanced Prompts</li>
+                                        </ul>
+                                        <div class="small text-muted mt-2">
+                                            Uses GPT-4 Turbo model
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mt-4">
                         <a href="{{ path('app_subscription_plans') }}" class="btn btn-primary btn-lg me-2">
                             <i class="fas fa-shopping-cart"></i> Purchase Credits
                         </a>
+                        {% if not is_granted('ROLE_PREMIUM') %}
+                            <a href="{{ path('app_subscription_plans') }}" class="btn btn-warning btn-lg me-2">
+                                <i class="fas fa-crown"></i> Upgrade to Premium
+                            </a>
+                        {% endif %}
                         <a href="{{ path('app_product_edit', {'id': product.id}) }}" class="btn btn-outline-secondary btn-lg">
                             <i class="fas fa-arrow-left"></i> Back to Product
                         </a>
