@@ -1,0 +1,103 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SEO Status Debug{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">SEO Status Debug</h1>
+                        <div>
+                            <a href="{{ path('app_woocommerce_import') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Import
+                            </a>
+                            <a href="{{ path('app_woocommerce_debug_seo') }}" class="btn btn-primary ms-2">
+                                <i class="fas fa-sync"></i> Refresh
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> This page shows detailed SEO information for your products. Products with 3 or more "Yes" values should be marked as "optimized" (green smiley).
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Product Name</th>
+                                    <th>Meta Description</th>
+                                    <th>Meta Content</th>
+                                    <th>Short Description</th>
+                                    <th>Image Alt Text</th>
+                                    <th>Detailed Description</th>
+                                    <th>Target Keyphrase</th>
+                                    <th>SEO Score</th>
+                                    <th>Status</th>
+                                    <th>Should Be</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                    <tr class="{{ product.highlight ? 'table-warning' : '' }}">
+                                        <td>{{ product.woocommerceId }}</td>
+                                        <td>
+                                            {{ product.name }}
+                                            {% if product.highlight %}
+                                                <div class="badge bg-warning">Special Case</div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="{{ product.metaDescription == 'Yes' ? 'text-success' : 'text-danger' }}">{{ product.metaDescription }}</td>
+                                        <td>
+                                            <small class="text-muted">{{ product.metaDescriptionRaw }}</small>
+                                            {% if product.highlight and product.metaDescription == 'No' %}
+                                                <div class="mt-2 small bg-light p-1 rounded">
+                                                    <i class="fas fa-info-circle text-primary"></i> This product should be marked as not having a meta description
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="{{ product.shortDescription == 'Yes' ? 'text-success' : 'text-danger' }}">{{ product.shortDescription }}</td>
+                                        <td class="{{ product.imageAltText == 'Yes' ? 'text-success' : 'text-danger' }}">{{ product.imageAltText }}</td>
+                                        <td class="{{ product.detailedDescription == 'Yes' ? 'text-success' : 'text-danger' }}">{{ product.detailedDescription }}</td>
+                                        <td class="{{ product.targetKeyphrase == 'Yes' ? 'text-success' : 'text-danger' }}">{{ product.targetKeyphrase }}</td>
+                                        <td>
+                                            <span class="badge {{ product.seoScore >= 3 ? 'bg-success' : 'bg-danger' }}">
+                                                {{ product.seoScore }}/4
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if product.currentStatus == 'optimized' %}
+                                                <span class="text-success fs-5" title="SEO Optimized"><i class="fas fa-smile"></i></span>
+                                            {% else %}
+                                                <span class="text-danger fs-5" title="Not SEO Optimized"><i class="fas fa-frown"></i></span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if product.calculatedStatus == 'optimized' %}
+                                                <span class="text-success fs-5" title="SEO Optimized"><i class="fas fa-smile"></i></span>
+                                            {% else %}
+                                                <span class="text-danger fs-5" title="Not SEO Optimized"><i class="fas fa-frown"></i></span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if products|length == 0 %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> No products found in your account.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

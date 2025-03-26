@@ -43,6 +43,10 @@ class WooCommerceProduct
 
     #[ORM\Column(length: 50)]
     private string $status = 'imported';
+    
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $seoStatus = null;
+    
     #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $createdAt = null;
     #[ORM\Column(type: 'datetime_immutable')]
@@ -244,6 +248,17 @@ class WooCommerceProduct
     public function setConsumerSecret(string $consumerSecret): static
     {
         $this->consumerSecret = $consumerSecret;
+        return $this;
+    }
+
+    public function getSeoStatus(): ?string
+    {
+        return $this->seoStatus;
+    }
+
+    public function setSeoStatus(?string $seoStatus): static
+    {
+        $this->seoStatus = $seoStatus;
         return $this;
     }
 }

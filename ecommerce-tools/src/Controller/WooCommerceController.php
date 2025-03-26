@@ -16,6 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\Service\AIService;
+use App\Service\SeoStatusService;
 
 #[Route('/woocommerce')]
 #[IsGranted('ROLE_USER')]
@@ -26,19 +27,22 @@ class WooCommerceController extends AbstractController
     private WooCategoryRepository $wooCategoryRepository;
     private HttpClientInterface $httpClient;
     private AIService $aiService;
+    private SeoStatusService $seoStatusService;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         WooCommerceProductRepository $wooCommerceProductRepository,
         WooCategoryRepository $wooCategoryRepository,
         HttpClientInterface $httpClient,
-        AIService $aiService
+        AIService $aiService,
+        SeoStatusService $seoStatusService
     ) {
         $this->entityManager = $entityManager;
         $this->wooCommerceProductRepository = $wooCommerceProductRepository;
         $this->wooCategoryRepository = $wooCategoryRepository;
         $this->httpClient = $httpClient;
         $this->aiService = $aiService;
+        $this->seoStatusService = $seoStatusService;
     }
 
     private function getTypedUser(): User
@@ -228,6 +232,157 @@ class WooCommerceController extends AbstractController
             return $this->redirectToRoute('app_woocommerce_connect');
         }
         
+        // Handle AJAX request to get a specific product for preview
+        if ($request->isXmlHttpRequest() && $request->query->get('action') === 'get_product') {
+            $productId = $request->query->get('product_id');
+            
+            if (!$productId) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Product ID is required'
+                ]);
+            }
+            
+            try {
+                // Clear entity manager cache to ensure fresh data
+                $this->entityManager->clear();
+                
+                // First try to get product from database - note this is per user
+                $existingProduct = $this->wooCommerceProductRepository->findOneBy([
+                    'woocommerceId' => $productId,
+                    'owner' => $user
+                ]);
+                
+                // Log attempt for debugging purposes
+                error_log("Product preview requested: ID {$productId} for user {$user->getId()} / {$user->getEmail()} - " . date('Y-m-d H:i:s'));
+                
+                if ($existingProduct) {
+                    // Debug helper function to check if value is truly set (not empty or just whitespace)
+                    $hasValue = function($value) {
+                        return isset($value) && $value !== null && trim((string)$value) !== '';
+                    };
+                    
+                    // Check if meta description actually exists and isn't empty
+                    $metaDescription = $existingProduct->getMetaDescription();
+                    
+                    // Log for debugging
+                    error_log("Product ID {$productId} ({$existingProduct->getName()}) meta description check:");
+                    error_log("Raw meta description: " . var_export($metaDescription, true));
+                    error_log("Meta description length: " . ($metaDescription ? strlen($metaDescription) : 0));
+                    error_log("Meta description is empty: " . ($metaDescription === null || trim($metaDescription) === '' ? 'true' : 'false'));
+                    
+                    $metaDescriptionExists = $hasValue($metaDescription);
+                    
+                    // Get all the raw data we can find about this product
+                    $rawData = [
+                        'id' => $existingProduct->getId(),
+                        'woocommerce_id' => $existingProduct->getWoocommerceId(),
+                        'name' => $existingProduct->getName(),
+                        'meta_description' => $metaDescription,
+                        'meta_description_exists' => $metaDescriptionExists, 
+                        'meta_description_length' => $metaDescriptionExists ? strlen($metaDescription) : 0,
+                        'meta_title' => $existingProduct->getMetaTitle(),
+                        'target_keyphrase' => $existingProduct->getTargetKeyphrase(),
+                        'image_alt_text' => $existingProduct->getImageAltText(),
+                        'seo_status' => $existingProduct->getSeoStatus(),
+                        'description' => $existingProduct->getDescription(),
+                        'short_description' => $existingProduct->getShortDescription(),
+                        'image_url' => $existingProduct->getImageUrl(),
+                        // Add all getter methods available
+                        'created_at' => $existingProduct->getCreatedAt() ? $existingProduct->getCreatedAt()->format('Y-m-d H:i:s') : null,
+                        'updated_at' => $existingProduct->getUpdatedAt() ? $existingProduct->getUpdatedAt()->format('Y-m-d H:i:s') : null,
+                        'debug_info' => [
+                            'meta_description_check' => var_export($metaDescription, true),
+                            'is_null' => $metaDescription === null,
+                            'is_empty_string' => $metaDescription === '',
+                            'trimmed_empty' => trim((string)$metaDescription) === '',
+                            'user_id' => $user->getId()
+                        ]
+                    ];
+
+                    // Get original data from database
+                    $productData = $existingProduct->getOriginalData();
+                    
+                    // Return comprehensive debugging information for this product
+                    return $this->json([
+                        'success' => true,
+                        'product' => [
+                            'id' => $existingProduct->getWoocommerceId(),
+                            'name' => $existingProduct->getName(),
+                            'status' => $productData['status'] ?? 'publish',
+                            'type' => $productData['type'] ?? 'simple',
+                            'categories' => $productData['categories'] ?? [],
+                            // Get actual data from the product
+                            'meta_description' => $existingProduct->getMetaDescription(),
+                            'meta_title' => $existingProduct->getMetaTitle(),
+                            'target_keyphrase' => $existingProduct->getTargetKeyphrase(),
+                            'description' => $existingProduct->getDescription(),
+                            'short_description' => $existingProduct->getShortDescription(),
+                            'images' => $productData['images'] ?? [],
+                            'regular_price' => $productData['regular_price'] ?? '',
+                            'sale_price' => $productData['sale_price'] ?? '',
+                            'attributes' => $productData['attributes'] ?? [],
+                            'meta_data' => array_merge(
+                                $productData['meta_data'] ?? [],
+                                [
+                                    [
+                                        'key' => 'meta_description',
+                                        'value' => $existingProduct->getMetaDescription()
+                                    ],
+                                    [
+                                        'key' => 'meta_title',
+                                        'value' => $existingProduct->getMetaTitle()
+                                    ],
+                                    [
+                                        'key' => 'target_keyphrase',
+                                        'value' => $existingProduct->getTargetKeyphrase()
+                                    ]
+                                ]
+                            )
+                        ],
+                        'source' => 'database_direct',
+                        'raw_data' => $rawData,
+                        'is_special_debug' => true,
+                        'direct_fields' => [
+                            'meta_description' => $existingProduct->getMetaDescription(),
+                            'meta_title' => $existingProduct->getMetaTitle(),
+                            'target_keyphrase' => $existingProduct->getTargetKeyphrase(),
+                            'image_alt_text' => $existingProduct->getImageAltText(),
+                            'seo_status' => $existingProduct->getSeoStatus()
+                        ],
+                        'user_id' => $user->getId()
+                    ]);
+                }
+                
+                // If not in database, fetch from WooCommerce API
+                $apiUrl = $user->getWoocommerceStoreUrl() . '/wp-json/wc/v3/products/' . $productId;
+                
+                $response = $this->httpClient->request('GET', $apiUrl, [
+                    'query' => [
+                        'consumer_key' => $user->getWoocommerceConsumerKey(),
+                        'consumer_secret' => $user->getWoocommerceConsumerSecret()
+                    ],
+                    'verify_peer' => false,
+                    'verify_host' => false,
+                    'timeout' => 30
+                ]);
+                
+                // Get product from the API response
+                $productData = $response->toArray();
+                
+                return $this->json([
+                    'success' => true,
+                    'product' => $productData,
+                    'source' => 'api'
+                ]);
+            } catch (\Exception $e) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Error fetching product: ' . $e->getMessage()
+                ]);
+            }
+        }
+        
         // Get categories for filtering
         $categories = [];
         $stagedProducts = $this->wooCommerceProductRepository->findByOwnerAndStatus($user, 'staged');
@@ -319,7 +474,7 @@ class WooCommerceController extends AbstractController
                         'owner' => $user
                     ]);
                     
-                        // If product doesn't exist, save it to the database
+                    // If product doesn't exist, save it to the database
                     if (!$existingProduct) {
                         $newProduct = new WooCommerceProduct();
                         $newProduct->setWoocommerceId($productData['id']);
@@ -410,6 +565,10 @@ class WooCommerceController extends AbstractController
                         $imageAltTextValue = 'Image of ' . $productData['name'] . ' - ID:' . $timestamp;
                         $newProduct->setImageAltText($imageAltTextValue);
                         
+                        // Calculate and set SEO status
+                        $seoStatus = $this->seoStatusService->calculateSeoStatus($newProduct);
+                        $newProduct->setSeoStatus($seoStatus);
+                        
                         // Set status to staged (not yet imported to dashboard)
                         $newProduct->setStatus('staged');
                         
@@ -439,13 +598,30 @@ class WooCommerceController extends AbstractController
                         $productData['imported'] = false;
                         $productData['import_status'] = 'staged';
                         
+                        // Add SEO status to the JSON response (both camelCase and snake_case for compatibility)
+                        $productData['seoStatus'] = $seoStatus;
+                        $productData['seo_status'] = $seoStatus;
+                        
                         // Keep track of the mapping between API product and new entity
                         $newEntities[$productData['id']] = $newProduct;
                     } else {
+                        // Calculate SEO status if needed
+                        if (!$existingProduct->getSeoStatus()) {
+                            $seoStatus = $this->seoStatusService->calculateSeoStatus($existingProduct);
+                            $existingProduct->setSeoStatus($seoStatus);
+                            $this->entityManager->persist($existingProduct);
+                            $this->entityManager->flush();
+                        }
+                        
                         // Product already exists, add entity ID to the data
                         $productData['entity_id'] = $existingProduct->getId();
                         $productData['imported'] = true;
                         $productData['import_status'] = $existingProduct->getStatus();
+                        
+                        // Add SEO status to the JSON response (both camelCase and snake_case for compatibility)
+                        $seoStatus = $existingProduct->getSeoStatus() ?: 'needs_improvement';
+                        $productData['seoStatus'] = $seoStatus;
+                        $productData['seo_status'] = $seoStatus;
                         
                         // Add to duplicate products array for frontend notification
                         $duplicateProducts[] = [
@@ -497,6 +673,7 @@ class WooCommerceController extends AbstractController
                     ]);
                 }
                 
+                // Return the JSON response when fetching products
                 return $this->json([
                     'success' => true,
                     'products' => $products,
@@ -509,6 +686,14 @@ class WooCommerceController extends AbstractController
                     'category' => $category,
                     'categories' => array_values($productCategories ?: $categories),
                     'hasMorePages' => ($page < $totalPages)
+                ], 200, [
+                    'Content-Type' => 'application/json'
+                ], [
+                    'seo_status' => true,         // Ensure seo_status is included in the serialization
+                    'max_depth' => 3,             // Increase depth for nested objects
+                    'circular_reference_handler' => function ($object) {
+                        return $object->getId();  // Handle circular references
+                    }
                 ]);
             } catch (\Exception $e) {
                 return $this->json([
@@ -749,14 +934,25 @@ class WooCommerceController extends AbstractController
                         'date_modified' => $product->getUpdatedAt()->format('Y-m-d H:i:s'),
                         'images' => isset($originalData['images']) ? $originalData['images'] : [],
                         'imported' => true,
-                        'import_status' => $product->getStatus()
+                        'import_status' => $product->getStatus(),
+                        // SEO-related fields that need to be included
+                        'seo_status' => $product->getSeoStatus(),
+                        'meta_description' => $product->getMetaDescription(),
+                        'meta_title' => $product->getMetaTitle(),
+                        'target_keyphrase' => $product->getTargetKeyphrase(),
+                        // Add a log of when this data was generated
+                        'generated_at' => date('Y-m-d H:i:s')
                     ];
+                    
+                    // Log data for debugging
+                    error_log("Staged product {$product->getWoocommerceId()} ({$product->getName()}) - SEO status: {$product->getSeoStatus()}, Meta desc exists: " . ($product->getMetaDescription() ? 'YES' : 'NO'));
                 }
                 
                 return $this->json([
                     'success' => true,
                     'products' => $formattedProducts,
-                    'total' => count($formattedProducts)
+                    'total' => count($formattedProducts),
+                    'timestamp' => date('Y-m-d H:i:s')
                 ]);
             } catch (\Exception $e) {
                 return $this->json([
@@ -836,6 +1032,105 @@ class WooCommerceController extends AbstractController
             'categories' => $categories
         ]);
     }
+    
+    #[Route('/debug-seo', name: 'app_woocommerce_debug_seo')]
+    public function debugSeo(Request $request): Response
+    {
+        $user = $this->getTypedUser();
+        
+        // Get all products for this user
+        $products = $this->wooCommerceProductRepository->findBy(['owner' => $user]);
+        
+        $results = [];
+        foreach ($products as $product) {
+            // Get raw metadata values for inspection
+            $metaDesc = $product->getMetaDescription();
+            $shortDesc = $product->getShortDescription();
+            $altText = $product->getImageAltText();
+            $description = $product->getDescription();
+            $targetKeyphrase = $product->getTargetKeyphrase();
+            
+            // Special case for the product the user mentioned - log extra information
+            $isSpecificProduct = (strpos($product->getName(), 'San Francisco 49ers Wincraft NFL Pencils') !== false);
+            if ($isSpecificProduct) {
+                error_log("SPECIAL PRODUCT DETECTED: " . $product->getName());
+                error_log("Meta Description: [" . ($metaDesc ?: 'NULL') . "]");
+                error_log("Meta Description Length: " . ($metaDesc ? strlen($metaDesc) : 0));
+                error_log("Meta Description after trim: [" . ($metaDesc ? trim($metaDesc) : 'NULL') . "]");
+                error_log("Short Description: [" . ($shortDesc ?: 'NULL') . "]");
+            }
+            
+            // Calculate SEO score based on the criteria the user wants - with strict empty checking
+            $hasMetaDescription = $metaDesc !== null && trim($metaDesc) !== '';
+            $hasShortDescription = $shortDesc !== null && trim($shortDesc) !== '';
+            $hasImageAltText = $altText !== null && trim($altText) !== '';
+            $hasDetailedDescription = $description !== null && trim($description) !== '' && strlen(strip_tags($description)) > 50;
+            $hasTargetKeyphrase = $targetKeyphrase !== null && trim($targetKeyphrase) !== '';
+            
+            // Debug output to help troubleshoot
+            $debugInfo = sprintf(
+                "Product #%s (%s): meta_desc=[%s], short_desc=%s, image_alt=%s, desc=%s, keyphrase=%s",
+                $product->getWoocommerceId(),
+                $product->getName(),
+                $metaDesc ? (strlen($metaDesc) > 30 ? substr($metaDesc, 0, 30) . '...' : $metaDesc) : 'NULL',
+                $hasShortDescription ? 'Yes' : 'No',
+                $hasImageAltText ? 'Yes' : 'No',
+                $hasDetailedDescription ? 'Yes' : 'No',
+                $hasTargetKeyphrase ? 'Yes' : 'No'
+            );
+            error_log($debugInfo);
+            
+            $seoScore = 0;
+            if ($hasMetaDescription) $seoScore++;
+            if ($hasShortDescription) $seoScore++;
+            if ($hasImageAltText) $seoScore++;
+            if ($hasDetailedDescription) $seoScore++;
+            
+            // Consider optimized if it has at least 3 out of 4 criteria
+            $calculatedStatus = ($seoScore >= 3) ? 'optimized' : 'needs_improvement';
+            $currentStatus = $product->getSeoStatus();
+            
+            // Force update SEO status to ensure it's current
+            if ($currentStatus !== $calculatedStatus) {
+                $product->setSeoStatus($calculatedStatus);
+                $this->entityManager->persist($product);
+            }
+            
+            $results[] = [
+                'id' => $product->getId(),
+                'woocommerceId' => $product->getWoocommerceId(),
+                'name' => $product->getName(),
+                'metaDescription' => $hasMetaDescription ? 'Yes' : 'No',
+                'metaDescriptionRaw' => $metaDesc ? (strlen($metaDesc) > 50 ? substr($metaDesc, 0, 50) . '...' : $metaDesc) : '(empty)',
+                'shortDescription' => $hasShortDescription ? 'Yes' : 'No',
+                'imageAltText' => $hasImageAltText ? 'Yes' : 'No',
+                'detailedDescription' => $hasDetailedDescription ? 'Yes' : 'No',
+                'targetKeyphrase' => $hasTargetKeyphrase ? 'Yes' : 'No',
+                'seoScore' => $seoScore,
+                'currentStatus' => $currentStatus,
+                'calculatedStatus' => $calculatedStatus,
+                'highlight' => $isSpecificProduct
+            ];
+        }
+        
+        // Flush changes
+        $this->entityManager->flush();
+        
+        // Sort by SEO score (highest first)
+        usort($results, function($a, $b) {
+            // Put highlighted product at the top
+            if ($a['highlight'] && !$b['highlight']) return -1;
+            if (!$a['highlight'] && $b['highlight']) return 1;
+            
+            // Then sort by SEO score
+            return $b['seoScore'] - $a['seoScore'];
+        });
+        
+        return $this->render('woocommerce/debug_seo.html.twig', [
+            'products' => $results
+        ]);
+    }
+
     #[Route('/export/{id}', name: 'app_woocommerce_export')]
     public function export(WooCommerceProduct $product): Response
     {
