@@ -46,6 +46,36 @@
         #editorHiddenContent {
             display: none;
         }
+        /* Styles for the Current Content section */
+        .current-content-section h6 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        .current-content-section .content-block {
+            margin-bottom: 1.5rem;
+        }
+        .current-content-section .description-content {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            min-height: 100px;
+        }
+        .current-content-section .description-content p {
+            margin-bottom: 1rem;
+        }
+        .current-content-section .description-content ul, 
+        .current-content-section .description-content ol {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+        .current-content-section .description-content h2, 
+        .current-content-section .description-content h3, 
+        .current-content-section .description-content h4 {
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
     </style>
 {% endblock %}
 
@@ -160,27 +190,41 @@
                                 <div class="card-header">
                                     <h5 class="card-title mb-0">Current Content</h5>
                                 </div>
-                                <div class="card-body">
-                                    <h6>Product Name</h6>
-                                    <p>{{ product.name }}</p>
+                                <div class="card-body current-content-section">
+                                    <div class="content-block">
+                                        <h6>Product Name</h6>
+                                        <p>{{ product.name }}</p>
+                                    </div>
 
-                                    <h6>Description</h6>
-                                    <p>{{ product.description }}</p>
+                                    <div class="content-block">
+                                        <h6>Description</h6>
+                                        <div class="description-content">{{ product.description|raw }}</div>
+                                    </div>
 
-                                    <h6>Short Description</h6>
-                                    <p>{{ product.shortDescription }}</p>
+                                    <div class="content-block">
+                                        <h6>Short Description</h6>
+                                        <div class="description-content">{{ product.shortDescription|raw }}</div>
+                                    </div>
 
-                                    <h6>Meta Title</h6>
-                                    <p>{{ product.metaTitle }}</p>
+                                    <div class="content-block">
+                                        <h6>Meta Title</h6>
+                                        <p>{{ product.metaTitle }}</p>
+                                    </div>
                                     
-                                    <h6>Target Keyphrase</h6>
-                                    <p>{{ product.targetKeyphrase }}</p>
+                                    <div class="content-block">
+                                        <h6>Target Keyphrase</h6>
+                                        <p>{{ product.targetKeyphrase }}</p>
+                                    </div>
                                     
-                                    <h6>Meta Description</h6>
-                                    <p>{{ product.metaDescription }}</p>
+                                    <div class="content-block">
+                                        <h6>Meta Description</h6>
+                                        <p>{{ product.metaDescription }}</p>
+                                    </div>
 
-                                    <h6>Image Alt Text</h6>
-                                    <p>{{ product.imageAltText }}</p>
+                                    <div class="content-block">
+                                        <h6>Image Alt Text</h6>
+                                        <p>{{ product.imageAltText }}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -310,6 +354,22 @@
                                                 <i class="fas fa-redo"></i> Generate Again
                                             </button>
                                             {% endif %}
+                                            
+                                            <!-- Export to store button -->
+                                            <div class="mt-4 border-top pt-4">
+                                                <div class="alert alert-danger">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                                                        <div>
+                                                            <h6 class="fw-bold mb-1">Warning: Direct Export to Your Store</h6>
+                                                            <p class="mb-0">This will immediately replace your product content in your WooCommerce store. This action cannot be undone!</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" id="exportToStore" class="btn btn-danger w-100">
+                                                    <i class="fas fa-cloud-upload-alt"></i> Export to Your Store
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -575,6 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const generateBtn = document.getElementById('generateContent');
     const regenerateBtn = document.getElementById('regenerateContent');
     const applyBtn = document.getElementById('applyContent');
+    const exportBtn = document.getElementById('exportToStore');
     const initialState = document.getElementById('initialState');
     const generationProgress = document.getElementById('generationProgress');
     const generatedContent = document.getElementById('generatedContent');
@@ -589,6 +650,94 @@ document.addEventListener('DOMContentLoaded', function() {
     // Preview functionality
     if (previewBtn) {
         previewBtn.addEventListener('click', showPreview);
+    }
+    
+    // Export to store functionality
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToStore);
+    }
+    
+    function exportToStore() {
+        // Show confirmation dialog
+        if (confirm('WARNING: This will immediately export and replace the product content in your WooCommerce store. This action cannot be undone!\n\nAre you absolutely sure you want to continue?')) {
+            try {
+                // Get HTML content from the editor
+                let descriptionHtml = '';
+                
+                if (hiddenTextarea && hiddenTextarea.value) {
+                    // Sanitize HTML content to prevent JSON issues
+                    descriptionHtml = hiddenTextarea.value;
+                    
+                    // Remove HTML comments which can break JSON
+                    descriptionHtml = descriptionHtml.replace(/<!--[\s\S]*?-->/g, '');
+                    
+                    // Ensure HTML is valid and well-formed
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(descriptionHtml, 'text/html');
+                    descriptionHtml = doc.body.innerHTML;
+                }
+                
+                const content = {
+                    description: descriptionHtml,
+                    shortDescription: document.getElementById('generatedShortDescription').value || '',
+                    metaTitle: document.getElementById('generatedMetaTitle').value || '',
+                    targetKeyphrase: document.getElementById('generatedTargetKeyphrase').value || '',
+                    metaDescription: document.getElementById('generatedMetaDescription').value || '',
+                    imageAltText: document.getElementById('generatedImageAltText').value || '',
+                    directExport: true // Flag to indicate this should be exported directly
+                };
+    
+                {% if is_granted('ROLE_PREMIUM') %}
+                // Add premium content if available
+                if (document.getElementById('generatedSeoKeywords')) {
+                    content.seoKeywords = document.getElementById('generatedSeoKeywords').value || '';
+                }
+                
+                if (document.getElementById('generatedSocialMediaPost')) {
+                    content.socialMediaPost = document.getElementById('generatedSocialMediaPost').value || '';
+                }
+                {% endif %}
+    
+                // Disable the export button and show loading state
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Exporting...';
+    
+                // Make the API request to export directly to WooCommerce
+                fetch('{{ path('app_woocommerce_export', {'id': product.id}) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(content)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`Server response: ${response.status} - ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert('Successfully exported to your WooCommerce store!');
+                        window.location.href = '{{ path('app_woocommerce_dashboard') }}';
+                    } else {
+                        throw new Error(data.message || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Export error:', error);
+                    alert('Error exporting to store: ' + error.message);
+                    // Reset button state
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Export to Your Store';
+                });
+            } catch (error) {
+                console.error('Client error:', error);
+                alert('Error preparing content for export: ' + error.message);
+            }
+        }
     }
     
     function showPreview() {
@@ -620,6 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
         previewModal.show();
     }
+
     // Set up toolbar buttons
     editorButtons.forEach(button => {
         button.addEventListener('click', function() {

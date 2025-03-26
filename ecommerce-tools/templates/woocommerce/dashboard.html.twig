@@ -223,6 +223,10 @@
                                                                        class="btn btn-sm btn-outline-success">
                                                                         <i class="fas fa-robot"></i> Generate
                                                                     </a>
+                                                                    <button type="button" class="btn btn-sm btn-outline-info preview-product" 
+                                                                           data-product-id="{{ product.woocommerceId }}" title="Preview Product">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -306,6 +310,10 @@
                                                                        class="btn btn-sm btn-outline-success">
                                                                         <i class="fas fa-upload"></i> Export to Shop
                                                                     </a>
+                                                                    <button type="button" class="btn btn-sm btn-outline-info preview-product" 
+                                                                           data-product-id="{{ product.woocommerceId }}" title="Preview Product">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -394,6 +402,10 @@
                                                                        target="_blank" class="btn btn-sm btn-outline-secondary">
                                                                         <i class="fas fa-external-link-alt"></i> View in WooCommerce
                                                                     </a>
+                                                                    <button type="button" class="btn btn-sm btn-outline-info preview-product" 
+                                                                           data-product-id="{{ product.woocommerceId }}" title="Preview Product">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -532,96 +544,803 @@
 </div>
 {% endblock %}
 
+{% block additional_modals %}
+<!-- Product Preview Modal -->
+<div class="modal fade" id="productPreviewModal" tabindex="-1" aria-labelledby="productPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="productPreviewModalLabel">Product Preview</h5>
+                <div>
+                    <button type="button" class="btn btn-light btn-sm me-2" id="refreshPreviewBtn" title="Refresh product data">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="productPreviewLoader" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading product details...</p>
+                </div>
+                <div id="productPreviewContent" class="d-none">
+                    <!-- Product Preview Header -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            <img id="previewProductImage" src="" alt="Product Image" class="img-fluid rounded shadow-sm mb-3" style="max-height: 200px;">
+                        </div>
+                        <div class="col-md-8">
+                            <h3 id="previewProductName" class="mb-2"></h3>
+                            <div class="d-flex gap-2 mb-3">
+                                <span id="previewProductStatus" class="badge bg-success"></span>
+                                <span id="previewProductType" class="badge bg-info"></span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="text-muted">Categories:</span>
+                                <div id="previewProductCategories"></div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted">Price:</span>
+                                <span id="previewProductPrice" class="fs-5 fw-bold"></span>
+                                <span id="previewProductSalePrice" class="text-success ms-2"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Product Data Tabs -->
+                    <ul class="nav nav-tabs" id="productDataTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab" aria-controls="seo" aria-selected="false">SEO Data</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="attributes-tab" data-bs-toggle="tab" data-bs-target="#attributes" type="button" role="tab" aria-controls="attributes" aria-selected="false">Attributes</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="metadata-tab" data-bs-toggle="tab" data-bs-target="#metadata" type="button" role="tab" aria-controls="metadata" aria-selected="false">Metadata</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom mb-4" id="productDataContent">
+                        <!-- Description Tab -->
+                        <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+                            <div class="mb-3">
+                                <h6>Short Description</h6>
+                                <div id="previewProductShortDesc" class="p-3 bg-light rounded"></div>
+                            </div>
+                            <div>
+                                <h6>Full Description</h6>
+                                <div id="previewProductFullDesc" class="p-3 bg-light rounded"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- SEO Tab -->
+                        <div class="tab-pane fade" id="seo" role="tabpanel" aria-labelledby="seo-tab">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light d-flex justify-content-between">
+                                            <strong>Meta Title</strong>
+                                            <span id="previewMetaTitleStatus" class="badge bg-success">✓</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <p id="previewMetaTitle" class="mb-0"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light d-flex justify-content-between">
+                                            <strong>Meta Description</strong>
+                                            <span id="previewMetaDescStatus" class="badge bg-success">✓</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <p id="previewMetaDesc" class="mb-0"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <strong>Keywords</strong>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="previewKeywords"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Attributes Tab -->
+                        <div class="tab-pane fade" id="attributes" role="tabpanel" aria-labelledby="attributes-tab">
+                            <div id="previewProductAttributes">
+                                <!-- Product attributes will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Metadata Tab -->
+                        <div class="tab-pane fade" id="metadata" role="tabpanel" aria-labelledby="metadata-tab">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Key</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewProductMetadata">
+                                        <!-- Metadata will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
 {% block javascripts %}
 {{ parent() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Imported Products Tab Process AI Functionality
-    initializeCheckboxes(
-        'selectAllImported', 
-        '.product-checkbox', 
-        'processAiBtn', 
-        'selectedCount', 
-        'processForm'
-    );
+    console.log('DOM fully loaded - initializing preview functionality');
+
+    // References to key elements or create them if they don't exist
+    let productPreviewModal = document.getElementById('productPreviewModal');
+    console.log('Modal element found:', !!productPreviewModal);
     
-    // Imported Products Tab Delete Functionality
-    initializeCheckboxes(
-        'selectAllImported', 
-        '.product-checkbox', 
-        'deleteImportedBtn', 
-        'selectedDeleteImportedCount', 
-        'processForm'
-    );
+    // Create the modal dynamically if it doesn't exist
+    if (!productPreviewModal) {
+        console.log('Modal not found in DOM, creating dynamically');
+        const modalHTML = `
+        <div class="modal fade" id="productPreviewModal" tabindex="-1" aria-labelledby="productPreviewModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="productPreviewModalLabel">Product Preview</h5>
+                        <div>
+                            <button type="button" class="btn btn-light btn-sm me-2" id="refreshPreviewBtn" title="Refresh product data">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div id="productPreviewLoader" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading product details...</p>
+                        </div>
+                        <div id="productPreviewContent" class="d-none">
+                            <!-- Product Preview Header -->
+                            <div class="row mb-4">
+                                <div class="col-md-4 text-center">
+                                    <img id="previewProductImage" src="" alt="Product Image" class="img-fluid rounded shadow-sm mb-3" style="max-height: 200px;">
+                                </div>
+                                <div class="col-md-8">
+                                    <h3 id="previewProductName" class="mb-2"></h3>
+                                    <div class="d-flex gap-2 mb-3">
+                                        <span id="previewProductStatus" class="badge bg-success"></span>
+                                        <span id="previewProductType" class="badge bg-info"></span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        <span class="text-muted">Categories:</span>
+                                        <div id="previewProductCategories"></div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-muted">Price:</span>
+                                        <span id="previewProductPrice" class="fs-5 fw-bold"></span>
+                                        <span id="previewProductSalePrice" class="text-success ms-2"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Product Data Tabs -->
+                            <ul class="nav nav-tabs" id="productDataTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab" aria-controls="seo" aria-selected="false">SEO Data</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="attributes-tab" data-bs-toggle="tab" data-bs-target="#attributes" type="button" role="tab" aria-controls="attributes" aria-selected="false">Attributes</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="metadata-tab" data-bs-toggle="tab" data-bs-target="#metadata" type="button" role="tab" aria-controls="metadata" aria-selected="false">Metadata</button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content p-3 border border-top-0 rounded-bottom mb-4" id="productDataContent">
+                                <!-- Description Tab -->
+                                <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+                                    <div class="mb-3">
+                                        <h6>Short Description</h6>
+                                        <div id="previewProductShortDesc" class="p-3 bg-light rounded"></div>
+                                    </div>
+                                    <div>
+                                        <h6>Full Description</h6>
+                                        <div id="previewProductFullDesc" class="p-3 bg-light rounded"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- SEO Tab -->
+                                <div class="tab-pane fade" id="seo" role="tabpanel" aria-labelledby="seo-tab">
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <div class="card">
+                                                <div class="card-header bg-light d-flex justify-content-between">
+                                                    <strong>Meta Title</strong>
+                                                    <span id="previewMetaTitleStatus" class="badge bg-success">✓</span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p id="previewMetaTitle" class="mb-0"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <div class="card">
+                                                <div class="card-header bg-light d-flex justify-content-between">
+                                                    <strong>Meta Description</strong>
+                                                    <span id="previewMetaDescStatus" class="badge bg-success">✓</span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p id="previewMetaDesc" class="mb-0"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <strong>Keywords</strong>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="previewKeywords"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Attributes Tab -->
+                                <div class="tab-pane fade" id="attributes" role="tabpanel" aria-labelledby="attributes-tab">
+                                    <div id="previewProductAttributes">
+                                        <!-- Product attributes will be loaded here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Metadata Tab -->
+                                <div class="tab-pane fade" id="metadata" role="tabpanel" aria-labelledby="metadata-tab">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Key</th>
+                                                    <th>Value</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="previewProductMetadata">
+                                                <!-- Metadata will be loaded here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // Append the modal to the document body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Get a reference to the newly created modal
+        productPreviewModal = document.getElementById('productPreviewModal');
+        console.log('Modal created dynamically, reference obtained:', !!productPreviewModal);
+    }
     
-    // Staged Products Tab Functionality
-    initializeCheckboxes(
-        'selectAllStaged', 
-        '.staged-checkbox', 
-        'deleteStagedBtn', 
-        'selectedStagedCount', 
-        'stagedForm'
-    );
+    // Ensure modal has necessary Bootstrap classes
+    if (productPreviewModal) {
+        productPreviewModal.classList.add('fade');
+    }
     
-    // Exported Products Tab Functionality
-    initializeCheckboxes(
-        'selectAllExported', 
-        '.exported-checkbox', 
-        'deleteBtn', 
-        'selectedDeleteCount', 
-        'deleteForm'
-    );
+    // Get all preview buttons and add click handlers
+    const previewButtons = document.querySelectorAll('.preview-product');
+    console.log('Preview buttons found:', previewButtons.length);
     
-    // Function to initialize checkbox functionality for a tab
+    previewButtons.forEach(button => {
+        // Remove data attributes to prevent Bootstrap from handling the modal
+        button.removeAttribute('data-bs-toggle');
+        button.removeAttribute('data-bs-target');
+        
+        // Add manual click handler
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const productId = this.getAttribute('data-product-id');
+            console.log('Preview button clicked for product:', productId);
+            
+            // Refresh reference to modal in case DOM has changed
+            productPreviewModal = document.getElementById('productPreviewModal');
+            if (!productPreviewModal) {
+                console.error('Modal still not found in DOM even after attempted creation');
+                return;
+            }
+            
+            // Prepare modal content
+            const previewLoader = document.getElementById('productPreviewLoader');
+            const previewContent = document.getElementById('productPreviewContent');
+            
+            if (previewLoader) previewLoader.classList.remove('d-none');
+            if (previewContent) previewContent.classList.add('d-none');
+            
+            // Store product ID for refresh
+            const refreshBtn = document.getElementById('refreshPreviewBtn');
+            if (refreshBtn) {
+                refreshBtn.setAttribute('data-product-id', productId);
+            }
+            
+            // Enhanced modal display with detailed error checking
+            try {
+                console.log('Showing modal for product:', productId);
+                
+                // Set inline styles to make the modal visible
+                productPreviewModal.style.display = 'block';
+                productPreviewModal.style.paddingRight = '15px';
+                document.body.classList.add('modal-open');
+                document.body.style.overflow = 'hidden';
+                document.body.style.paddingRight = '15px';
+                
+                // Force a repaint before adding the show class
+                void productPreviewModal.offsetHeight;
+                
+                // Add show class to make the modal visible
+                productPreviewModal.classList.add('show');
+                
+                // Create backdrop element if it doesn't exist
+                let backdrop = document.querySelector('.modal-backdrop');
+                if (!backdrop) {
+                    backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade';
+                    document.body.appendChild(backdrop);
+                    
+                    // Force a repaint before adding show class
+                    void backdrop.offsetHeight;
+                    backdrop.classList.add('show');
+                }
+                
+                console.log('Modal should be visible now');
+            } catch (error) {
+                console.error('Error showing modal:', error);
+            }
+            
+            // Fetch product details
+            fetchProductDetails(productId);
+        });
+    });
+    
+    // Setup close button handlers - refreshed every time to ensure they work
+    function setupCloseHandlers() {
+        const modal = document.getElementById('productPreviewModal');
+        if (!modal) return;
+        
+        try {
+            const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"]');
+            console.log('Close buttons found in modal:', closeButtons.length);
+            
+            closeButtons.forEach(button => {
+                // Remove existing handlers
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                // Add fresh handler
+                newButton.addEventListener('click', function(e) {
+                    console.log('Close button clicked');
+                    closeModal();
+                });
+            });
+        } catch (error) {
+            console.error('Error setting up close buttons:', error);
+        }
+    }
+    
+    // Call this function initially
+    setupCloseHandlers();
+    
+    // Keyboard escape to close modal
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('productPreviewModal');
+        if (e.key === 'Escape' && modal && modal.classList.contains('show')) {
+            console.log('Escape key pressed, closing modal');
+            closeModal();
+        }
+    });
+    
+    // Close modal when clicking outside
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('productPreviewModal');
+        if (!modal || !modal.classList.contains('show')) return;
+        
+        // Only close if clicking directly on the modal backdrop (not its contents)
+        const modalDialog = modal.querySelector('.modal-dialog');
+        if (modalDialog && !modalDialog.contains(e.target) && e.target === modal) {
+            console.log('Click detected outside modal content, closing');
+            closeModal();
+        }
+    });
+    
+    // Enhanced close modal function
+    function closeModal() {
+        console.log('Closing modal');
+        const modal = document.getElementById('productPreviewModal');
+        if (!modal) return;
+        
+        try {
+            // Remove show class first
+            modal.classList.remove('show');
+            
+            // Wait for transition to complete
+            setTimeout(function() {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                
+                // Remove backdrop
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) backdrop.remove();
+            }, 150);
+        } catch (error) {
+            console.error('Error closing modal:', error);
+            
+            // Force cleanup
+            if (modal) modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+        }
+    }
+    
+    // Add refresh button handler with immediate setup
+    function setupRefreshHandler() {
+        const refreshBtn = document.getElementById('refreshPreviewBtn');
+        if (!refreshBtn) return;
+        
+        // Remove existing handlers
+        const newBtn = refreshBtn.cloneNode(true);
+        refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+        
+        // Add fresh handler
+        newBtn.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            if (productId) {
+                console.log('Refreshing preview for product:', productId);
+                
+                const previewLoader = document.getElementById('productPreviewLoader');
+                const previewContent = document.getElementById('productPreviewContent');
+                
+                if (previewLoader) previewLoader.classList.remove('d-none');
+                if (previewContent) previewContent.classList.add('d-none');
+                
+                fetchProductDetails(productId);
+            }
+        });
+    }
+    
+    // Call this immediately
+    setupRefreshHandler();
+    
+    // Fetch product details from API
+    function fetchProductDetails(productId) {
+        const url = new URL('{{ path('app_woocommerce_import') }}', window.location.origin);
+        url.searchParams.append('action', 'get_product');
+        url.searchParams.append('product_id', productId);
+        url.searchParams.append('_t', Date.now()); // Prevent caching
+        
+        console.log('Fetching product details from URL:', url.toString());
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Product data received:', data);
+            
+            if (data.success) {
+                if (data.product) {
+                    displayProductPreview(data.product);
+                    
+                    // Refresh close and refresh handlers after data is loaded
+                    setupCloseHandlers();
+                    setupRefreshHandler();
+                } else {
+                    throw new Error('Product data not found in response');
+                }
+            } else {
+                throw new Error(data.message || 'Failed to load product details');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching product:', error);
+            const previewLoader = document.getElementById('productPreviewLoader');
+            if (previewLoader) {
+                previewLoader.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        ${error.message}
+                    </div>
+                `;
+            }
+        });
+    }
+    
+    // Display product preview
+    function displayProductPreview(product) {
+        console.log('Displaying product preview:', product);
+        
+        const previewLoader = document.getElementById('productPreviewLoader');
+        const previewContent = document.getElementById('productPreviewContent');
+        
+        // Hide loader, show content
+        if (previewLoader) previewLoader.classList.add('d-none');
+        if (previewContent) previewContent.classList.remove('d-none');
+        
+        try {
+            // Update product details
+            setElementText('productPreviewModalLabel', `Product Preview: ${product.name}`);
+            setElementText('previewProductName', product.name || 'No Name');
+            setElementText('previewProductStatus', product.status || 'Unknown');
+            setElementText('previewProductType', product.type || 'Simple');
+            
+            // Update image
+            const imageEl = document.getElementById('previewProductImage');
+            if (imageEl) {
+                if (product.images && product.images.length > 0) {
+                    imageEl.src = product.images[0].src;
+                    imageEl.alt = product.name;
+                } else {
+                    imageEl.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                    imageEl.alt = 'No Image Available';
+                }
+            }
+            
+            // Update descriptions
+            setElementHTML('previewProductShortDesc', product.short_description || '<em>No short description available</em>');
+            setElementHTML('previewProductFullDesc', product.description || '<em>No description available</em>');
+            
+            // Update categories
+            const categoriesEl = document.getElementById('previewProductCategories');
+            if (categoriesEl) {
+                if (product.categories && product.categories.length > 0) {
+                    categoriesEl.innerHTML = product.categories
+                        .map(cat => `<span class="badge bg-info me-1">${cat.name}</span>`)
+                        .join('');
+                } else {
+                    categoriesEl.innerHTML = '<span class="text-muted">No categories</span>';
+                }
+            }
+            
+            // Update price
+            const priceEl = document.getElementById('previewProductPrice');
+            const salePriceEl = document.getElementById('previewProductSalePrice');
+            
+            if (priceEl) {
+                if (product.price) {
+                    if (product.sale_price) {
+                        priceEl.innerHTML = `<s>${formatPrice(product.regular_price)}</s>`;
+                        if (salePriceEl) salePriceEl.textContent = formatPrice(product.sale_price);
+                    } else {
+                        priceEl.textContent = formatPrice(product.price);
+                        if (salePriceEl) salePriceEl.textContent = '';
+                    }
+                } else {
+                    priceEl.textContent = 'N/A';
+                    if (salePriceEl) salePriceEl.textContent = '';
+                }
+            }
+            
+            // Update SEO data
+            updateSeoData(product);
+            
+            // Update attributes
+            updateAttributes(product);
+            
+            // Update metadata
+            updateMetadata(product);
+            
+            console.log('Preview content updated successfully');
+            
+        } catch (error) {
+            console.error('Error rendering product preview:', error);
+            if (previewContent) {
+                previewContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Error displaying product: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    // Update SEO data in the preview
+    function updateSeoData(product) {
+        const metaTitle = product.meta_title || '';
+        setElementText('previewMetaTitle', metaTitle || product.name || 'No meta title');
+        
+        const metaTitleStatusEl = document.getElementById('previewMetaTitleStatus');
+        if (metaTitleStatusEl) {
+            metaTitleStatusEl.className = metaTitle ? 'badge bg-success' : 'badge bg-warning';
+            metaTitleStatusEl.textContent = metaTitle ? '✓' : 'Missing';
+        }
+        
+        const metaDesc = product.meta_description || '';
+        setElementText('previewMetaDesc', metaDesc || 'No meta description available');
+        
+        const metaDescStatusEl = document.getElementById('previewMetaDescStatus');
+        if (metaDescStatusEl) {
+            metaDescStatusEl.className = metaDesc ? 'badge bg-success' : 'badge bg-warning';
+            metaDescStatusEl.textContent = metaDesc ? '✓' : 'Missing';
+        }
+        
+        const keywordsEl = document.getElementById('previewKeywords');
+        if (keywordsEl) {
+            if (product.tags && product.tags.length > 0) {
+                keywordsEl.innerHTML = product.tags
+                    .map(tag => `<span class="badge bg-secondary me-1 mb-1">${tag.name}</span>`)
+                    .join('');
+            } else {
+                keywordsEl.innerHTML = '<em>No keywords/tags available</em>';
+            }
+        }
+    }
+    
+    // Update attributes in the preview
+    function updateAttributes(product) {
+        const attributesEl = document.getElementById('previewProductAttributes');
+        if (!attributesEl) return;
+        
+        if (product.attributes && product.attributes.length > 0) {
+            let html = '<table class="table table-striped">';
+            html += '<thead><tr><th>Name</th><th>Values</th><th>Visible</th></tr></thead><tbody>';
+            
+            product.attributes.forEach(attr => {
+                const options = Array.isArray(attr.options) ? attr.options.join(', ') : attr.options || '';
+                const visible = attr.visible ? '<span class="text-success">Yes</span>' : '<span class="text-muted">No</span>';
+                
+                html += `<tr><td>${attr.name}</td><td>${options}</td><td>${visible}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            attributesEl.innerHTML = html;
+        } else {
+            attributesEl.innerHTML = '<div class="alert alert-info">No attributes defined for this product.</div>';
+        }
+    }
+    
+    // Update metadata in the preview
+    function updateMetadata(product) {
+        const metadataEl = document.getElementById('previewProductMetadata');
+        if (!metadataEl) return;
+        
+        if (product.meta_data && product.meta_data.length > 0) {
+            let html = '';
+            
+            product.meta_data.forEach(meta => {
+                if (meta.key && !meta.key.startsWith('_')) {
+                    const value = typeof meta.value === 'object' ? JSON.stringify(meta.value) : meta.value;
+                    html += `<tr><td><code>${meta.key}</code></td><td>${value || '<em>empty</em>'}</td></tr>`;
+                }
+            });
+            
+            if (html) {
+                metadataEl.innerHTML = html;
+            } else {
+                metadataEl.innerHTML = '<tr><td colspan="2" class="text-center">No visible metadata available</td></tr>';
+            }
+        } else {
+            metadataEl.innerHTML = '<tr><td colspan="2" class="text-center">No metadata available</td></tr>';
+        }
+    }
+    
+    // Helper function to safely set text content
+    function setElementText(id, text) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = text;
+    }
+    
+    // Helper function to safely set HTML content
+    function setElementHTML(id, html) {
+        const element = document.getElementById(id);
+        if (element) element.innerHTML = html;
+    }
+    
+    // Helper function to format price
+    function formatPrice(price) {
+        if (!price) return 'N/A';
+        try {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(price);
+        } catch (e) {
+            console.error('Error formatting price:', e);
+            return '$' + (parseFloat(price) || 0).toFixed(2);
+        }
+    }
+    
+    // Initialize checkbox functionality for each tab
     function initializeCheckboxes(selectAllId, checkboxClass, buttonId, countId, formId) {
         const selectAllCheckbox = document.getElementById(selectAllId);
-        if (!selectAllCheckbox) return; // Exit if element doesn't exist
+        if (!selectAllCheckbox) return;
         
         const checkboxes = document.querySelectorAll(checkboxClass);
         const actionButton = document.getElementById(buttonId);
         const countBadge = document.getElementById(countId);
         
-        // Function to update the selected count and button state
         function updateCount() {
             const checkedBoxes = document.querySelectorAll(`${checkboxClass}:checked`);
             const count = checkedBoxes.length;
             
-            // Update count badge
-            countBadge.textContent = `(${count})`;
+            if (countBadge) {
+                countBadge.textContent = `(${count})`;
+            }
             
-            // Enable or disable the button
-            actionButton.disabled = count === 0;
+            if (actionButton) {
+                actionButton.disabled = count === 0;
+            }
         }
         
-        // Add event listener to the "Select All" checkbox
         selectAllCheckbox.addEventListener('change', function() {
             checkboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
-            
             updateCount();
         });
         
-        // Add event listeners to individual checkboxes
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
-                // If any checkbox is unchecked, uncheck "Select All"
                 if (!this.checked) {
                     selectAllCheckbox.checked = false;
-                } 
-                // If all checkboxes are checked, check "Select All"
-                else if (document.querySelectorAll(`${checkboxClass}:not(:checked)`).length === 0) {
+                } else if (document.querySelectorAll(`${checkboxClass}:not(:checked)`).length === 0) {
                     selectAllCheckbox.checked = true;
                 }
-                
                 updateCount();
             });
         });
         
-        // Initialize the count on page load
         updateCount();
         
-        // Form submission with loading state
         const form = document.getElementById(formId);
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -631,18 +1350,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Show loading state
                 actionButton.disabled = true;
-                
-                // Set specific loading text based on button type
-                if (buttonId === 'processAiBtn') {
-                    actionButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-                } else if (buttonId === 'deleteBtn') {
-                    actionButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
-                }
+                actionButton.innerHTML = buttonId === 'processAiBtn'
+                    ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...'
+                    : '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
             });
         }
     }
+    
+    // Initialize all checkbox functionalities
+    initializeCheckboxes('selectAllImported', '.product-checkbox', 'processAiBtn', 'selectedCount', 'processForm');
+    initializeCheckboxes('selectAllImported', '.product-checkbox', 'deleteImportedBtn', 'selectedDeleteImportedCount', 'processForm');
+    initializeCheckboxes('selectAllStaged', '.staged-checkbox', 'deleteStagedBtn', 'selectedStagedCount', 'stagedForm');
+    initializeCheckboxes('selectAllExported', '.exported-checkbox', 'deleteBtn', 'selectedDeleteCount', 'deleteForm');
 });
 </script>
 {% endblock %}
