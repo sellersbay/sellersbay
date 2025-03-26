@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ⚙️ Symfony & PHP Best Practices
+
+## Services
+- Store in `src/Service/`
+- Use **descriptive service names** like `AIService`, `StripeBillingService`
+- Use **dependency injection**, avoid static access
+
+## Controllers
+- Keep controllers **thin**: business logic goes into services
+- Use **attribute routing** and meaningful route names
+- Return `Response` objects, not raw HTML/JSON
+- Use **ParamConverter** for fetching entities when possible
+
+## Forms
+- Store in `src/Form/`
+- Suffix with `FormType` (e.g., `ProductFormType`)
+- Use **form validation**, **themes**, and **CSRF protection**
+
+## Repositories
+- Store in `src/Repository/`
+- Use Doctrine **QueryBuilder**
+- Avoid raw SQL unless necessary
+- Use **clear method names** like `findActiveUsersByPlan()`
+
+## Entities
+- Use **annotations or attributes** for mapping
+- Use `DateTimeImmutable` for `created_at`/`updated_at`
+- Include validation constraints
+- Include **getters/setters**

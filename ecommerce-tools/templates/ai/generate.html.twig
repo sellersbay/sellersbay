@@ -26,7 +26,7 @@
                         <div class="alert alert-success" role="alert">{{ flash_success }}</div>
                     {% endfor %}
 
-                    <div class="alert alert-info mb-4">
+                    <div class="alert alert-info mb-3">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0">
                                 <i class="fas fa-coins fa-2x"></i>
@@ -103,7 +103,65 @@
                         </div>
                     </div>
                     {% endif %}
-
+                    <div class="card mb-3 border-light">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Regular vs Premium Accounts</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-3 h-100 border-info">
+                                        <div class="card-header bg-info bg-opacity-10">
+                                            <h6 class="mb-0"><i class="fas fa-robot me-2"></i> Regular Account Features</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled mb-0">
+                                                <li><i class="fas fa-check text-success me-2"></i> Target keyphrase generation</li>
+                                                <li><i class="fas fa-check text-success me-2"></i> Meta title creation</li>
+                                                <li><i class="fas fa-check text-success me-2"></i> Product descriptions</li>
+                                                <li><i class="fas fa-check text-success me-2"></i> Short descriptions</li>
+                                                <li><i class="fas fa-check text-success me-2"></i> Meta descriptions</li>
+                                                <li><i class="fas fa-check text-success me-2"></i> Image alt text</li>
+                                                <li class="mt-2"><i class="fas fa-info-circle text-info me-2"></i> Uses GPT-3.5 Turbo (0.5 credits)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-3 h-100 border-primary">
+                                        <div class="card-header bg-primary bg-opacity-10">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-crown text-primary me-2"></i> Premium Account Features
+                                                {% if is_granted('ROLE_PREMIUM') %}
+                                                    <span class="badge bg-success ms-2">Available</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary ms-2">Upgrade Required</span>
+                                                {% endif %}
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="small mb-2">All regular features plus:</p>
+                                            <ul class="list-unstyled mb-0">
+                                                <li><i class="fas fa-star text-warning me-2"></i> <strong>SEO Keywords</strong>: Comprehensive list of 15-20 targeted keywords</li>
+                                                <li><i class="fas fa-star text-warning me-2"></i> <strong>Social Media Posts</strong>: Ready-to-use platform-optimized content</li>
+                                                <li><i class="fas fa-star text-warning me-2"></i> <strong>Custom Tone</strong>: Choose from multiple writing styles</li>
+                                                <li><i class="fas fa-star text-warning me-2"></i> <strong>Enhanced Prompts</strong>: More detailed and nuanced content</li>
+                                                <li><i class="fas fa-star text-warning me-2"></i> <strong>Competitor Analysis</strong>: Outperform similar products</li>
+                                                <li class="mt-2"><i class="fas fa-bolt text-warning me-2"></i> Uses GPT-4 Turbo (1 credit)</li>
+                                            </ul>
+                                            {% if not is_granted('ROLE_PREMIUM') %}
+                                                <div class="mt-2">
+                                                    <a href="{{ path('app_subscription_plans') }}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-crown me-1"></i> Upgrade Now
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="card h-100">

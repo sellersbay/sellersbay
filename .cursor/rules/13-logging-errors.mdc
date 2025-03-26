@@ -1,0 +1,6 @@
+# 📜 Logging & Error Handling
+
+- Use Monolog with rotating logs in `/logs/`
+- Include user/session info where helpful
+- Don’t log passwords, tokens, or payment data
+- Use meaningful exception types & user-friendly messages

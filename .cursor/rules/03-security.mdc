@@ -1,0 +1,8 @@
+# 🔐 Security Rules
+
+- **Always validate input** – never trust user data
+- Use **Symfony Voters** for permissions
+- Escape all Twig output (default)
+- Use **prepared statements** or Doctrine
+- Passwords must use Symfony's hashing
+- Use **HTTPS** and environment variables for all API credentials

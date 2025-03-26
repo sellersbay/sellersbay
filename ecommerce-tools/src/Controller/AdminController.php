@@ -91,6 +91,124 @@ class AdminController extends AbstractController
         ]);
     }
     
+    #[Route('/users/filter', name: 'app_admin_users_filter', methods: ['POST'])]
+    public function filterUsers(Request $request): JsonResponse
+    {
+        // Verify CSRF token
+        $submittedToken = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('filter_users', $submittedToken)) {
+            return new JsonResponse([
+                'error' => 'Invalid CSRF token'
+            ], 403);
+        }
+        
+        // Get filter parameters from request
+        $role = $request->request->get('role');
+        $subscription = $request->request->get('subscription');
+        $credits = $request->request->get('credits');
+        $status = $request->request->get('status');
+        $search = $request->request->get('search');
+        
+        // Build query criteria
+        $criteria = [];
+        
+        // Apply role filter if provided
+        if ($role) {
+            // We'll handle role filtering in the repository since it's stored as JSON array
+        }
+        
+        // Apply subscription filter
+        if ($subscription) {
+            if ($subscription === 'none') {
+                $criteria['subscriptionTier'] = null;
+            } else {
+                $criteria['subscriptionTier'] = $subscription;
+            }
+        }
+        
+        // Apply status filter
+        if ($status !== null && $status !== '') {
+            $criteria['isVerified'] = $status == '1';
+        }
+        
+        // Basic filtering with criteria
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('u')
+           ->from('App\Entity\User', 'u');
+        
+        // Apply criteria as WHERE conditions
+        $paramCount = 0;
+        foreach ($criteria as $field => $value) {
+            if ($value === null) {
+                $qb->andWhere("u.{$field} IS NULL");
+            } else {
+                $paramName = 'param' . $paramCount++;
+                $qb->andWhere("u.{$field} = :{$paramName}");
+                $qb->setParameter($paramName, $value);
+            }
+        }
+        
+        // Apply role filtering
+        if ($role) {
+            $qb->andWhere("u.roles LIKE :role");
+            $qb->setParameter("role", '%"' . $role . '"%');
+        }
+        
+        // Apply credits filter
+        if ($credits) {
+            switch ($credits) {
+                case 'zero':
+                    $qb->andWhere('u.credits = 0');
+                    break;
+                case 'low':
+                    $qb->andWhere('u.credits > 0 AND u.credits <= 10');
+                    break;
+                case 'medium':
+                    $qb->andWhere('u.credits > 10 AND u.credits <= 50');
+                    break;
+                case 'high':
+                    $qb->andWhere('u.credits > 50');
+                    break;
+            }
+        }
+        
+        // Apply search filter
+        if ($search) {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    $qb->expr()->like('u.firstName', ':search'),
+                    $qb->expr()->like('u.lastName', ':search'),
+                    $qb->expr()->like('u.email', ':search')
+                )
+            );
+            $qb->setParameter('search', '%' . $search . '%');
+        }
+        
+        // Execute query
+        $users = $qb->getQuery()->getResult();
+        
+        // Transform users into array of user data
+        $userData = [];
+        foreach ($users as $user) {
+            $userData[] = [
+                'id' => $user->getId(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+                'credits' => $user->getCredits(),
+                'subscriptionTier' => $user->getSubscriptionTier(),
+                'isVerified' => $user->isVerified(),
+                'createdAt' => $user->getCreatedAt()->format('Y-m-d'),
+            ];
+        }
+        
+        return new JsonResponse([
+            'users' => $userData,
+            'count' => count($userData),
+        ]);
+    }
+    
     #[Route('/user/{id}', name: 'app_admin_user_view')]
     public function viewUser(User $user): Response
     {
@@ -684,7 +802,7 @@ class AdminController extends AbstractController
     {
         $userId = $request->request->get('adjustmentUser');
         $adjustmentType = $request->request->get('adjustmentType');
-        $amount = (int)$request->request->get('adjustmentAmount');
+        $amount = (int)$request->request->get('creditsAmount');
         $reason = $request->request->get('adjustmentReason');
         $notifyUser = $request->request->has('notifyUser');
         
@@ -2258,5 +2376,190 @@ class AdminController extends AbstractController
         
         // Redirect back to the statistics page
         return $this->redirectToRoute('app_admin_statistics');
+    }
+
+    #[Route('/api/stats', name: 'app_admin_api_stats', methods: ['GET'])]
+    public function apiStats(): JsonResponse
+    {
+        // Count stats for the dashboard
+        $totalUsers = $this->userRepository->count([]);
+        $activeUsers = $this->userRepository->count(['isVerified' => true]);
+        $premiumUsers = $this->userRepository->countUsersByRole('ROLE_PREMIUM');
+        $totalProducts = $this->wooCommerceProductRepository->count([]);
+        $aiProcessedProducts = $this->wooCommerceProductRepository->count(['status' => 'ai_processed']);
+        $exportedProducts = $this->wooCommerceProductRepository->count(['status' => 'exported']);
+        
+        // Calculate total credits in the system
+        $totalCredits = $this->userRepository->getTotalCredits();
+        
+        return $this->json([
+            'stats' => [
+                'total_users' => $totalUsers,
+                'active_users' => $activeUsers,
+                'premium_users' => $premiumUsers,
+                'total_products' => $totalProducts,
+                'ai_processed_products' => $aiProcessedProducts,
+                'exported_products' => $exportedProducts,
+                'total_credits' => $totalCredits,
+                'premium_percentage' => ($totalUsers > 0) ? round(($premiumUsers / $totalUsers * 100), 1) : 0,
+                'timestamp' => (new \DateTime())->format('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
+    #[Route('/api/credit-stats', name: 'app_admin_api_credit_stats', methods: ['GET'])]
+    public function apiCreditStats(): JsonResponse
+    {
+        // Get total credits in the system
+        $totalCredits = $this->userRepository->getTotalCredits();
+        
+        // Get monthly revenue - in a real app this would come from the transaction repository
+        // For now, we're using mock data from the creditsManagement method
+        $revenueMtd = 4235.75;
+        $revenueGrowth = 15.3;
+        
+        // Get credits used this month - in a real app this would come from the transaction repository
+        // For now, we're using mock data from the creditsManagement method
+        $creditsUsedMtd = 2180;
+        $dailyAvg = 72.6;
+        
+        return $this->json([
+            'stats' => [
+                'total_credits' => $totalCredits,
+                'revenue_mtd' => $revenueMtd,
+                'revenue_growth' => $revenueGrowth,
+                'credits_used_mtd' => $creditsUsedMtd,
+                'daily_avg_usage' => $dailyAvg,
+                'timestamp' => (new \DateTime())->format('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+    
+    #[Route('/products/filter', name: 'app_admin_products_filter', methods: ['POST'])]
+    public function filterProducts(Request $request): JsonResponse
+    {
+        try {
+            // Verify CSRF token
+            $submittedToken = $request->request->get('_token');
+            if (!$this->isCsrfTokenValid('filter_products', $submittedToken)) {
+                return new JsonResponse([
+                    'error' => 'Invalid CSRF token'
+                ], 403);
+            }
+            
+            // Get filter parameters from request
+            $userId = $request->request->get('user');
+            $status = $request->request->get('status');
+            $category = $request->request->get('category');
+            $search = $request->request->get('search');
+            $dateRange = $request->request->get('dateRange');
+            
+            // Build query criteria
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('p')
+               ->from('App\Entity\WooCommerceProduct', 'p');
+            
+            // Apply user filter
+            if ($userId) {
+                $qb->andWhere('p.owner = :userId')
+                   ->setParameter('userId', $userId);
+            }
+            
+            // Apply status filter
+            if ($status) {
+                $qb->andWhere('p.status = :status')
+                   ->setParameter('status', $status);
+            }
+            
+            // Apply category filter
+            if ($category) {
+                $qb->andWhere('p.category = :category')
+                   ->setParameter('category', $category);
+            }
+            
+            // Apply search filter
+            if ($search) {
+                $qb->andWhere(
+                    $qb->expr()->orX(
+                        $qb->expr()->like('p.name', ':search'),
+                        $qb->expr()->like('p.description', ':search'),
+                        $qb->expr()->like('p.shortDescription', ':search')
+                    )
+                );
+                $qb->setParameter('search', '%' . $search . '%');
+            }
+            
+            // Apply date range filter
+            if ($dateRange) {
+                $now = new \DateTimeImmutable();
+                switch ($dateRange) {
+                    case 'today':
+                        $start = $now->setTime(0, 0, 0);
+                        $qb->andWhere('p.createdAt >= :start')
+                           ->setParameter('start', $start);
+                        break;
+                    case 'week':
+                        $start = $now->modify('monday this week')->setTime(0, 0, 0);
+                        $qb->andWhere('p.createdAt >= :start')
+                           ->setParameter('start', $start);
+                        break;
+                    case 'month':
+                        $start = $now->modify('first day of this month')->setTime(0, 0, 0);
+                        $qb->andWhere('p.createdAt >= :start')
+                           ->setParameter('start', $start);
+                        break;
+                    case 'custom':
+                        // Custom date range would need start/end dates passed separately
+                        $startDate = $request->request->get('startDate');
+                        $endDate = $request->request->get('endDate');
+                        if ($startDate) {
+                            $start = new \DateTimeImmutable($startDate);
+                            $qb->andWhere('p.createdAt >= :start')
+                               ->setParameter('start', $start);
+                        }
+                        if ($endDate) {
+                            $end = new \DateTimeImmutable($endDate);
+                            $end = $end->modify('+1 day')->setTime(0, 0, 0);
+                            $qb->andWhere('p.createdAt < :end')
+                               ->setParameter('end', $end);
+                        }
+                        break;
+                }
+            }
+            
+            // Execute query
+            $products = $qb->getQuery()->getResult();
+            
+            // Transform products into array
+            $productsData = [];
+            foreach ($products as $product) {
+                $productsData[] = [
+                    'id' => $product->getId(),
+                    'name' => $product->getName(),
+                    'description' => $product->getDescription(),
+                    'shortDescription' => $product->getShortDescription(),
+                    'status' => $product->getStatus(),
+                    'category' => $product->getCategory(),
+                    'woocommerceId' => $product->getWoocommerceId(),
+                    'imageUrl' => $product->getImageUrl(),
+                    'createdAt' => $product->getCreatedAt()->format('Y-m-d'),
+                    'updatedAt' => $product->getUpdatedAt() ? $product->getUpdatedAt()->format('Y-m-d') : null,
+                    'owner' => [
+                        'id' => $product->getOwner()->getId(),
+                        'firstName' => $product->getOwner()->getFirstName(),
+                        'lastName' => $product->getOwner()->getLastName(),
+                    ]
+                ];
+            }
+            
+            return new JsonResponse([
+                'products' => $productsData,
+                'count' => count($productsData),
+            ]);
+        } catch (\Exception $e) {
+            // Log the error and return a JSON response with error message
+            error_log('Error filtering products: ' . $e->getMessage());
+            return new JsonResponse(['error' => 'An error occurred while filtering products'], 500);
+        }
     }
 }

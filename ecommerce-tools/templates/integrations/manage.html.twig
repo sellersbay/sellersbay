@@ -1,0 +1,234 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Manage Integrations - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('build/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/mantis/css/mantis-bootstrap.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="mantis-app-container">
+    <div class="mantis-content">
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mantis-page-title">
+                            <i class="fas fa-plug me-2"></i> Store Integrations
+                        </h2>
+                        <a href="{{ path('app_dashboard') }}" class="btn mantis-btn mantis-btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Integration Status Cards -->
+            <div class="row g-4 mb-4">
+                <!-- WooCommerce Integration Card -->
+                <div class="col-lg-4">
+                    <div class="mantis-card h-100">
+                        <div class="card-header d-flex align-items-center">
+                            <h4 class="card-title mb-0">
+                                <i class="fab fa-wordpress me-2 text-primary"></i> WooCommerce
+                            </h4>
+                            {% if integration_statuses.woocommerce %}
+                                <span class="ms-auto badge bg-success">Connected</span>
+                            {% else %}
+                                <span class="ms-auto badge bg-danger">Not Connected</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                WooCommerce integration allows you to synchronize your products, orders, and inventory.
+                            </p>
+                            
+                            {% if integration_statuses.woocommerce %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i> Your WooCommerce store is connected.
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="{{ path('app_woocommerce_connect', {'edit': true}) }}" class="btn mantis-btn mantis-btn-primary">
+                                        <i class="fas fa-edit me-2"></i> Edit Connection
+                                    </a>
+                                    <a href="{{ path('app_woocommerce_dashboard') }}" class="btn mantis-btn mantis-btn-outline-primary">
+                                        <i class="fas fa-external-link-alt me-2"></i> Go to WooCommerce Dashboard
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i> Your WooCommerce store is not connected.
+                                </div>
+                                <div class="d-grid">
+                                    <a href="{{ path('app_woocommerce_connect') }}" class="btn mantis-btn mantis-btn-primary">
+                                        <i class="fas fa-plug me-2"></i> Connect WooCommerce
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Shopify Integration Card -->
+                <div class="col-lg-4">
+                    <div class="mantis-card h-100">
+                        <div class="card-header d-flex align-items-center">
+                            <h4 class="card-title mb-0">
+                                <i class="fab fa-shopify me-2 text-primary"></i> Shopify
+                            </h4>
+                            {% if integration_statuses.shopify %}
+                                <span class="ms-auto badge bg-success">Connected</span>
+                            {% else %}
+                                <span class="ms-auto badge bg-danger">Not Connected</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                Shopify integration allows you to synchronize your products, orders, and inventory.
+                            </p>
+                            
+                            {% if integration_statuses.shopify %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i> Your Shopify store is connected.
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="#" class="btn mantis-btn mantis-btn-primary">
+                                        <i class="fas fa-edit me-2"></i> Edit Connection
+                                    </a>
+                                    <a href="#" class="btn mantis-btn mantis-btn-outline-primary">
+                                        <i class="fas fa-external-link-alt me-2"></i> Go to Shopify Dashboard
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> Shopify integration coming soon!
+                                </div>
+                                <div class="d-grid">
+                                    <button class="btn mantis-btn mantis-btn-outline-secondary" disabled>
+                                        <i class="fas fa-plug me-2"></i> Connect Shopify
+                                        <span class="badge bg-primary ms-2">Coming Soon</span>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Magento Integration Card -->
+                <div class="col-lg-4">
+                    <div class="mantis-card h-100">
+                        <div class="card-header d-flex align-items-center">
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-shopping-cart me-2 text-primary"></i> Magento
+                            </h4>
+                            {% if integration_statuses.magento %}
+                                <span class="ms-auto badge bg-success">Connected</span>
+                            {% else %}
+                                <span class="ms-auto badge bg-danger">Not Connected</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                Magento integration allows you to synchronize your products, orders, and inventory.
+                            </p>
+                            
+                            {% if integration_statuses.magento %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i> Your Magento store is connected.
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="#" class="btn mantis-btn mantis-btn-primary">
+                                        <i class="fas fa-edit me-2"></i> Edit Connection
+                                    </a>
+                                    <a href="#" class="btn mantis-btn mantis-btn-outline-primary">
+                                        <i class="fas fa-external-link-alt me-2"></i> Go to Magento Dashboard
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> Magento integration coming soon!
+                                </div>
+                                <div class="d-grid">
+                                    <button class="btn mantis-btn mantis-btn-outline-secondary" disabled>
+                                        <i class="fas fa-plug me-2"></i> Connect Magento
+                                        <span class="badge bg-primary ms-2">Coming Soon</span>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Integration FAQs Section -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="mantis-card">
+                        <div class="card-header">
+                            <h4 class="card-title">
+                                <i class="fas fa-question-circle me-2"></i> Integration FAQs
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="integrationFAQs">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingOne">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                            How do I connect my WooCommerce store?
+                                        </button>
+                                    </h2>
+                                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#integrationFAQs">
+                                        <div class="accordion-body">
+                                            <p>To connect your WooCommerce store, you'll need to:</p>
+                                            <ol>
+                                                <li>Click on "Connect WooCommerce" button</li>
+                                                <li>Enter your WooCommerce store URL</li>
+                                                <li>Create API keys in your WooCommerce settings</li>
+                                                <li>Enter your Consumer Key and Consumer Secret</li>
+                                                <li>Click Connect to finish the setup</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingTwo">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                            When will Shopify integration be available?
+                                        </button>
+                                    </h2>
+                                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#integrationFAQs">
+                                        <div class="accordion-body">
+                                            <p>Shopify integration is currently in development and will be available soon. We're working on creating a seamless experience for Shopify store owners.</p>
+                                            <p>Stay tuned for updates!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingThree">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                            Is there a limit to how many stores I can connect?
+                                        </button>
+                                    </h2>
+                                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#integrationFAQs">
+                                        <div class="accordion-body">
+                                            <p>Free users can connect one store of each platform. Premium users can connect multiple stores per platform.</p>
+                                            <p>Check our <a href="{{ path('app_subscription_plans') }}">subscription plans</a> for more details.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/mantis/js/mantis-bootstrap.js') }}"></script>
+{% endblock %}

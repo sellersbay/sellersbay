@@ -116,11 +116,12 @@
                     <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
                 </div>
                 <div class="card-body">
-                    <form class="filter-form">
+                    <form class="filter-form" id="userFilterForm">
+                        <input type="hidden" name="_token" value="{{ csrf_token('filter_users') }}">
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label for="filterRole" class="form-label">Role</label>
-                                <select class="form-select" id="filterRole">
+                                <select class="form-select" id="filterRole" name="role">
                                     <option value="">All Roles</option>
                                     <option value="ROLE_ADMIN">Admin</option>
                                     <option value="ROLE_PREMIUM">Premium</option>
@@ -129,7 +130,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="filterSubscription" class="form-label">Subscription</label>
-                                <select class="form-select" id="filterSubscription">
+                                <select class="form-select" id="filterSubscription" name="subscription">
                                     <option value="">All Subscriptions</option>
                                     <option value="starter">Starter</option>
                                     <option value="professional">Professional</option>
@@ -139,7 +140,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="filterCredits" class="form-label">Credits</label>
-                                <select class="form-select" id="filterCredits">
+                                <select class="form-select" id="filterCredits" name="credits">
                                     <option value="">All</option>
                                     <option value="zero">No Credits</option>
                                     <option value="low">Low (1-10)</option>
@@ -149,7 +150,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="filterStatus" class="form-label">Status</label>
-                                <select class="form-select" id="filterStatus">
+                                <select class="form-select" id="filterStatus" name="status">
                                     <option value="">All</option>
                                     <option value="1">Active</option>
                                     <option value="0">Inactive</option>
@@ -157,13 +158,13 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="searchTerm" class="form-label">Search</label>
-                                <input type="text" class="form-control" id="searchTerm" placeholder="Name, email, etc.">
+                                <input type="text" class="form-control" id="searchTerm" name="search" placeholder="Name, email, etc.">
                             </div>
                             <div class="col-md-4 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="fas fa-filter"></i> Apply Filters
                                 </button>
-                                <button type="reset" class="btn btn-secondary">
+                                <button type="reset" class="btn btn-secondary" id="resetFilters">
                                     <i class="fas fa-undo"></i> Reset
                                 </button>
                             </div>
@@ -571,6 +572,147 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkActionsBtn.disabled = selectedCount === 0;
     }
     
+    // Handle filter form submission
+    const filterForm = document.getElementById('userFilterForm');
+    const usersTable = document.getElementById('usersTable').querySelector('tbody');
+    
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        usersTable.innerHTML = '<tr><td colspan="10" class="text-center">Loading users...</td></tr>';
+        
+        // Collect form data
+        const formData = new FormData(filterForm);
+        
+        // Send AJAX request
+        fetch('{{ path('app_admin_users_filter') }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update the user count display
+            const countDisplay = document.querySelector('.text-muted');
+            if (countDisplay) {
+                countDisplay.textContent = `Showing ${data.count} users`;
+            }
+            
+            // Clear existing table rows
+            usersTable.innerHTML = '';
+            
+            // If no results
+            if (data.users.length === 0) {
+                usersTable.innerHTML = '<tr><td colspan="10" class="text-center">No users found matching the criteria.</td></tr>';
+                return;
+            }
+            
+            // Add new rows for each user
+            data.users.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // Handle role badge
+                let roleBadge = '';
+                if (user.roles.includes('ROLE_ADMIN')) {
+                    roleBadge = '<span class="badge bg-danger">Admin</span>';
+                } else if (user.roles.includes('ROLE_PREMIUM')) {
+                    roleBadge = '<span class="badge bg-warning">Premium</span>';
+                } else {
+                    roleBadge = '<span class="badge bg-secondary">User</span>';
+                }
+                
+                // Handle subscription badge
+                let subscriptionBadge = '';
+                if (user.subscriptionTier) {
+                    subscriptionBadge = `<span class="badge bg-info">${user.subscriptionTier.charAt(0).toUpperCase() + user.subscriptionTier.slice(1)}</span>`;
+                } else {
+                    subscriptionBadge = '<span class="badge bg-light text-dark">None</span>';
+                }
+                
+                // Handle status icon
+                const statusIcon = user.isVerified 
+                    ? '<i class="fas fa-check-circle user-status active"></i>' 
+                    : '<i class="fas fa-times-circle user-status inactive"></i>';
+                
+                // Build row HTML
+                row.innerHTML = `
+                    <td>
+                        <div class="form-check">
+                            <input class="form-check-input user-select" type="checkbox" data-user-id="${user.id}">
+                        </div>
+                    </td>
+                    <td>${user.id}</td>
+                    <td>${user.firstName} ${user.lastName}</td>
+                    <td>${user.email}</td>
+                    <td>${roleBadge}</td>
+                    <td>${user.credits}</td>
+                    <td>${subscriptionBadge}</td>
+                    <td>${statusIcon}</td>
+                    <td>${user.createdAt}</td>
+                    <td class="table-actions">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/sellersbay/ecommerce-tools/public/admin/user/${user.id}" class="btn btn-info" title="View User">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="/sellersbay/ecommerce-tools/public/admin/user/${user.id}/edit" class="btn btn-primary" title="Edit User">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-warning" title="Adjust Credits"
+                                    data-bs-toggle="modal" data-bs-target="#adjustCreditsModal"
+                                    data-user-id="${user.id}"
+                                    data-user-name="${user.firstName} ${user.lastName}"
+                                    data-user-credits="${user.credits}">
+                                <i class="fas fa-coins"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger" title="Delete User"
+                                    data-bs-toggle="modal" data-bs-target="#deleteUserModal"
+                                    data-user-id="${user.id}"
+                                    data-user-name="${user.firstName} ${user.lastName}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                usersTable.appendChild(row);
+            });
+            
+            // Reinitialize event listeners for the new checkboxes
+            const newUserCheckboxes = document.querySelectorAll('.user-select');
+            newUserCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSelectedCount();
+                    if (!this.checked) {
+                        selectAllCheckbox.checked = false;
+                    } else {
+                        const allChecked = Array.from(newUserCheckboxes).every(cb => cb.checked);
+                        selectAllCheckbox.checked = allChecked;
+                    }
+                });
+            });
+            
+            // Reset the select all checkbox
+            selectAllCheckbox.checked = false;
+            updateSelectedCount();
+        })
+        .catch(error => {
+            console.error('Error applying filters:', error);
+            usersTable.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error loading users. Please try again.</td></tr>';
+        });
+    });
+    
+    // Handle reset button
+    document.getElementById('resetFilters').addEventListener('click', function() {
+        // Reset all form fields
+        filterForm.reset();
+        
+        // Submit the form to reload all users
+        filterForm.dispatchEvent(new Event('submit'));
+    });
+    
     // Handle bulk actions button
     bulkActionsBtn.addEventListener('click', function() {
         const bulkCountSpan = document.getElementById('bulkCount');
@@ -614,6 +756,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const userId = button.getAttribute('data-user-id');
         const userName = button.getAttribute('data-user-name');
         const userCredits = button.getAttribute('data-user-credits');
+        
+        // Update form action URL with the correct user ID
+        const form = document.getElementById('adjustCreditsForm');
+        form.action = form.action.replace('/0/', '/' + userId + '/');
         
         document.getElementById('creditUserId').value = userId;
         document.getElementById('creditUserName').value = userName;
@@ -664,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         input = document.createElement('input');
         input.type = 'hidden';
-        input.name = 'amount';
+        input.name = 'creditsAmount';
         input.value = amount;
         form.appendChild(input);
         

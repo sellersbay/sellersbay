@@ -1,0 +1,6 @@
+# 🚀 Deployment & CI/CD
+
+- Use feature branches and descriptive commit messages
+- Use GitHub Actions or deploy scripts (e.g., to Cloudways)
+- Never commit `.env`, Stripe keys, or secrets
+- Tag releases by version

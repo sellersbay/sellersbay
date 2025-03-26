@@ -1,0 +1,8 @@
+# 🧩 JavaScript Rules
+
+- Modular JS in `public/build/`
+- Use ES6+ (`const`, `let`, arrow functions`)
+- Avoid `var`, use strict equality (`===`)
+- Use `fetch()` for AJAX with CSRF tokens
+- Show loading state for requests
+- Clean up listeners, use event delegation

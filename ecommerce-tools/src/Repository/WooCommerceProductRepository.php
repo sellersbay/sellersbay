@@ -283,11 +283,14 @@ class WooCommerceProductRepository extends ServiceEntityRepository
                 ->getQuery()
                 ->getSingleScalarResult() ?? 0;
             
+            // Include year with month to clarify which year the data belongs to
             $monthName = $endDate->format('M');
+            $year = $endDate->format('Y');
             
-            // Store results with newest month last (reverse order)
-            $results[$numberOfMonths - 1 - $i] = [
+            // Store results in chronological order (oldest to newest)
+            $results[] = [
                 'month' => $monthName,
+                'year' => $year,
                 'count' => (int)$count
             ];
         }

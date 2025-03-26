@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Support - RoboSEO{% endblock %}
+{% block title %}Support - SellersBay{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -32,6 +32,18 @@
         .alert {
             margin-bottom: 20px;
         }
+        
+        .honeypot-field {
+            display: none;
+        }
+        
+        .environment-notice {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+        }
     </style>
 {% endblock %}
 
@@ -43,6 +55,14 @@
             <p class="text-muted">Submit your question or issue and our team will get back to you as soon as possible.</p>
         </div>
         
+        {% if is_local is defined and is_local %}
+            <div class="environment-notice">
+                <h5><i class="fas fa-info-circle"></i> Local Environment Notice</h5>
+                <p>You are currently running in a local environment. The form will work correctly, but emails won't actually be sent to <strong>support@sellersbay.com</strong>.</p>
+                <p>Instead, support requests will be logged to a temporary file for testing purposes. In a production environment, emails will be sent properly.</p>
+            </div>
+        {% endif %}
+        
         {% for label, messages in app.flashes %}
             {% for message in messages %}
                 <div class="alert alert-{{ label == 'error' ? 'danger' : label }}">
@@ -52,25 +72,71 @@
         {% endfor %}
         
         <form action="{{ path('app_support_submit') }}" method="POST">
+            {# CSRF Protection #}
+            <input type="hidden" name="token" value="{{ csrf_token('support_form') }}">
+            
+            {# Honeypot for anti-spam #}
+            <div class="honeypot-field">
+                <input type="text" name="website" value="">
+            </div>
+            
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label for="name" class="form-label">Your Name</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ user_name }}" required>
+                    <label for="name" class="form-label">Your Name *</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ user_name }}" maxlength="100" required>
                 </div>
                 <div class="col-md-6">
-                    <label for="email" class="form-label">Your Email</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ user_email }}" required>
+                    <label for="email" class="form-label">Your Email *</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ user_email }}" maxlength="100" required>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="issue_type" class="form-label">Issue Type *</label>
+                    <select class="form-select" id="issue_type" name="issue_type" required>
+                        <option value="" selected disabled>Select an issue type</option>
+                        <option value="technical">Technical Issue</option>
+                        <option value="billing">Billing Question</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="account">Account Problem</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="priority" class="form-label">Priority</label>
+                    <select class="form-select" id="priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
                 </div>
             </div>
             
             <div class="mb-3">
-                <label for="subject" class="form-label">Subject</label>
-                <input type="text" class="form-control" id="subject" name="subject" required>
+                <label for="subject" class="form-label">Subject *</label>
+                <input type="text" class="form-control" id="subject" name="subject" maxlength="150" required>
             </div>
             
             <div class="mb-3">
-                <label for="message" class="form-label">Message</label>
-                <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                <label for="order_number" class="form-label">Order/Reference Number (if applicable)</label>
+                <input type="text" class="form-control" id="order_number" name="order_number" maxlength="50">
+            </div>
+            
+            <div class="mb-3">
+                <label for="message" class="form-label">Message *</label>
+                <textarea class="form-control" id="message" name="message" rows="5" maxlength="2000" required></textarea>
+                <div class="form-text">Please provide as much detail as possible about your issue.</div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="agree_terms" name="agree_terms" required>
+                    <label class="form-check-label" for="agree_terms">
+                        I agree that my information will be processed to respond to my request
+                    </label>
+                </div>
             </div>
             
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">

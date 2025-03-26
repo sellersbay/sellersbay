@@ -1,0 +1,7 @@
+# ⚡ Performance Optimization
+
+- Use **Symfony Cache component**, Redis recommended
+- Cache expensive API or AI calls where needed
+- Paginate large tables and avoid N+1 queries
+- Use **lazy loading** unless eager is justified
+- Minify and combine assets

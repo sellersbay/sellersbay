@@ -1,0 +1,8 @@
+# 🧠 AI Integration Rules
+
+- **Rate-limit** OpenAI requests, handle quota errors
+- **Cache** AI responses if useful (e.g., product reprocessing)
+- Log OpenAI API calls (`logs/openai_api_log.txt`)
+- Provide **loading indicators** during AI processing
+- Let users **edit/approve** AI content before saving
+- Use Google Vision API only to assist content, not replace titles/descriptions

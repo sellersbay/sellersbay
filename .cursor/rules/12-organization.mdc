@@ -1,0 +1,6 @@
+# 📦 Project Organization
+
+- Follow standard Symfony structure
+- Group templates, assets, and controllers by feature
+- Store platform-specific files under `/platforms/woocommerce`, `/shopify/`, etc.
+- Never hardcode credentials; use `.env`

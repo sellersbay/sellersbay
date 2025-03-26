@@ -1,0 +1,7 @@
+# 🗃️ Database & Doctrine
+
+- Use clear, consistent column names and types
+- Use **foreign keys**, define indexes for speed
+- Use **Doctrine Migrations** for schema changes
+- Avoid raw SQL unless required (e.g., reporting)
+- Document and test all migration changes

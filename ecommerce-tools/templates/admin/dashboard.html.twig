@@ -37,6 +37,20 @@
         .admin-nav .nav-link i {
             margin-right: 0.5rem;
         }
+        
+        .stats-update-indicator {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .stats-value {
+            transition: all 0.3s ease;
+        }
+        
+        .stats-value.highlight {
+            color: #4e73df;
+        }
     </style>
 {% endblock %}
 
@@ -111,8 +125,8 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Users</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
-                                    <div class="text-xs text-muted">{{ stats.active_users }} active</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 stats-value" id="stats-total-users">{{ stats.total_users }}</div>
+                                    <div class="text-xs text-muted" id="stats-active-users">{{ stats.active_users }} active</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -129,8 +143,8 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Premium Users</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.premium_users }}</div>
-                                    <div class="text-xs text-muted">{{ (stats.premium_users / stats.total_users * 100)|round(1) }}% of users</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 stats-value" id="stats-premium-users">{{ stats.premium_users }}</div>
+                                    <div class="text-xs text-muted" id="stats-premium-percentage">{{ (stats.premium_users / stats.total_users * 100)|round(1) }}% of users</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-crown fa-2x text-gray-300"></i>
@@ -147,8 +161,8 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Products</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_products }}</div>
-                                    <div class="text-xs text-muted">{{ stats.ai_processed_products }} AI processed</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 stats-value" id="stats-total-products">{{ stats.total_products }}</div>
+                                    <div class="text-xs text-muted" id="stats-ai-processed">{{ stats.ai_processed_products }} AI processed</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-box fa-2x text-gray-300"></i>
@@ -165,7 +179,7 @@
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Credits</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_credits }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800 stats-value" id="stats-total-credits">{{ stats.total_credits }}</div>
                                     <div class="text-xs text-muted">System-wide</div>
                                 </div>
                                 <div class="col-auto">
@@ -173,6 +187,18 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats update indicator -->
+            <div class="row mb-4">
+                <div class="col-12 text-end">
+                    <div class="stats-update-indicator">
+                        <i class="fas fa-sync-alt"></i> <span id="stats-last-updated">Statistics are now real-time</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" id="refresh-stats-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh Now
+                        </button>
                     </div>
                 </div>
             </div>
@@ -376,34 +402,123 @@
 {% endblock %}
 
 {% block javascripts %}
-{{ parent() }}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Sample data for AI usage chart
-    const ctx = document.getElementById('aiUsageChart').getContext('2d');
-    const myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-            datasets: [{
-                label: 'AI Content Generations',
-                data: [65, 78, 90, 85, 92, 110, 120],
-                backgroundColor: 'rgba(78, 115, 223, 0.1)',
-                borderColor: 'rgba(78, 115, 223, 1)',
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up real-time statistics updates
+            const updateInterval = 30000; // Update every 30 seconds
+            let updateTimer;
+            
+            // Function to format time
+            function formatTime(date) {
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                return `${hours}:${minutes}:${seconds}`;
             }
-        }
-    });
-});
-</script>
+            
+            // Function to highlight changed values
+            function highlightValue(element) {
+                element.classList.add('highlight');
+                setTimeout(() => {
+                    element.classList.remove('highlight');
+                }, 1500);
+            }
+            
+            // Function to fetch latest statistics
+            function fetchStats() {
+                fetch('{{ path('app_admin_api_stats') }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        const stats = data.stats;
+                        
+                        // Update elements and highlight changes
+                        const totalUsersEl = document.getElementById('stats-total-users');
+                        if (totalUsersEl.textContent != stats.total_users) {
+                            totalUsersEl.textContent = stats.total_users;
+                            highlightValue(totalUsersEl);
+                        }
+                        
+                        const activeUsersEl = document.getElementById('stats-active-users');
+                        activeUsersEl.textContent = `${stats.active_users} active`;
+                        
+                        const premiumUsersEl = document.getElementById('stats-premium-users');
+                        if (premiumUsersEl.textContent != stats.premium_users) {
+                            premiumUsersEl.textContent = stats.premium_users;
+                            highlightValue(premiumUsersEl);
+                        }
+                        
+                        const premiumPercentageEl = document.getElementById('stats-premium-percentage');
+                        premiumPercentageEl.textContent = `${stats.premium_percentage}% of users`;
+                        
+                        const totalProductsEl = document.getElementById('stats-total-products');
+                        if (totalProductsEl.textContent != stats.total_products) {
+                            totalProductsEl.textContent = stats.total_products;
+                            highlightValue(totalProductsEl);
+                        }
+                        
+                        const aiProcessedEl = document.getElementById('stats-ai-processed');
+                        aiProcessedEl.textContent = `${stats.ai_processed_products} AI processed`;
+                        
+                        const totalCreditsEl = document.getElementById('stats-total-credits');
+                        if (totalCreditsEl.textContent != stats.total_credits) {
+                            totalCreditsEl.textContent = stats.total_credits;
+                            highlightValue(totalCreditsEl);
+                        }
+                        
+                        // Update last updated time
+                        const now = new Date();
+                        document.getElementById('stats-last-updated').textContent = `Last updated at ${formatTime(now)}`;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching statistics:', error);
+                        document.getElementById('stats-last-updated').textContent = 'Failed to update statistics';
+                    });
+            }
+            
+            // Set up the interval
+            function startUpdateInterval() {
+                // Clear any existing interval
+                if (updateTimer) {
+                    clearInterval(updateTimer);
+                }
+                
+                // Set new interval
+                updateTimer = setInterval(fetchStats, updateInterval);
+                
+                // Update immediately
+                fetchStats();
+            }
+            
+            // Initialize updates
+            startUpdateInterval();
+            
+            // Set up manual refresh button
+            document.getElementById('refresh-stats-btn').addEventListener('click', function() {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                
+                fetchStats();
+                
+                // Re-enable button after a delay
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Now';
+                }, 1000);
+                
+                // Reset the interval timer
+                startUpdateInterval();
+            });
+            
+            // Pause updates when tab is not visible to save resources
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    clearInterval(updateTimer);
+                } else {
+                    startUpdateInterval();
+                }
+            });
+        });
+    </script>
 {% endblock %}

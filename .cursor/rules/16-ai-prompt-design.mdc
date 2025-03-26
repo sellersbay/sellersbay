@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 🤖 AI Prompt Design
+
+- Prompts must include product title, optional image context, and structured instruction (e.g., bullet list format)
+- Limit token usage by trimming excess content before request
+- Add rules for OpenAI formatting: character count limits, keyword inclusion, etc.

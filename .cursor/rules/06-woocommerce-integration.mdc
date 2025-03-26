@@ -1,0 +1,7 @@
+# 🌐 WooCommerce Integration
+
+- Use REST API with proper error handling and logging
+- Retry failed Woo requests (e.g., 429, timeout)
+- Log Woo API calls to `logs/woo_api_requests_log.txt`
+- Sync product data in background if long-running
+- Validate all WooCommerce data on import

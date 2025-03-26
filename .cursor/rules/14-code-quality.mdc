@@ -1,0 +1,5 @@
+# ✅ Static Analysis & Code Quality
+
+- Use **PHPStan** or **Psalm** at level 6+ for static analysis
+- Run **PHP_CodeSniffer** with PSR-12 ruleset
+- Use **ESLint** for JS with recommended settings

@@ -1,0 +1,6 @@
+# 🧪 Testing Guidelines
+
+- Unit test services, especially billing/credit logic
+- Functional test form validation, login, and Stripe flow
+- Integration test product sync with WooCommerce/OpenAI
+- Simulate full user flows end-to-end

@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ✅ General Coding Standards
+
+- Use **4 spaces** for indentation in PHP, **2 spaces** in Twig/JS.
+- Keep lines under **120 characters**.
+- Use **PHPDoc** for all classes, methods, and complex logic.
+- Follow **DRY** (Don't Repeat Yourself) and **SOLID** principles.
+- **Naming Conventions**:
+  - `camelCase` for variables & methods  
+  - `PascalCase` for class names  
+  - `snake_case` for database fields & Twig variables

@@ -1,0 +1,304 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Account - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/mantis/css/mantis-bootstrap.css') }}">
+    <style>
+        /* Custom styles for the account page */
+        body {
+            background-color: #f5f7fb;
+        }
+        
+        /* Hide the original navbar */
+        body > nav.navbar.navbar-expand-lg.navbar-dark.bg-dark {
+            display: none !important;
+        }
+        
+        /* Force display of Mantis navbar */
+        .mantis-navbar {
+            display: block !important;
+        }
+        
+        /* Card styling */
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Profile image styling */
+        .profile-img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Section headers */
+        .section-header {
+            font-size: 1.2rem;
+            color: #004080;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        /* Integration badges */
+        .integration-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .integration-badge i {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="mantis-app-container">
+    <div class="mantis-content">
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="mb-4">My Account</h1>
+                    <p class="text-muted">Manage your personal information, view subscription details, and update account settings.</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Left Column: Personal Information and Subscription Details -->
+                <div class="col-md-6">
+                    <!-- Personal Information -->
+                    <div class="mantis-card mb-4">
+                        <div class="card-header">
+                            <h5 class="mantis-card-title">Personal Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <div class="mx-auto mb-3" style="width: 120px; height: 120px; background-color: #f0f3f8; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                    <i class="fas fa-user-circle fa-5x" style="color: #004080;"></i>
+                                </div>
+                                <h4>{{ user.fullName }}</h4>
+                                <p class="text-muted">Member since {{ user.createdAt|date('F Y') }}</p>
+                                {% if is_granted('ROLE_PREMIUM') %}
+                                    <span class="badge bg-success">Premium Member</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Regular Member</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="section-header">Contact Information</div>
+                            <div class="mb-3">
+                                <label class="form-label">Email Address</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="{{ user.email }}" readonly>
+                                    <button class="btn btn-outline-primary" type="button" disabled>Change</button>
+                                </div>
+                                <small class="text-muted">Contact support to change your email address</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" value="{{ user.firstName }}" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" value="{{ user.lastName }}" readonly>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <a href="{{ path('app_edit_profile') }}" class="btn btn-primary">
+                                    <i class="fas fa-user-edit me-2"></i> Edit Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Subscription Details -->
+                    <div class="mantis-card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mantis-card-title">Subscription Details</h5>
+                            <a href="{{ path('app_subscription_plans') }}" class="btn btn-sm btn-outline-primary">Manage</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Current Plan</label>
+                                <input type="text" class="form-control" value="{{ user.subscriptionTier|default('Free') }}" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                {% if user.subscriptionTier %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No active subscription</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Next Billing Date</label>
+                                <input type="text" class="form-control" value="{% if user.nextBillingDate is defined and user.nextBillingDate is not null %}{{ user.nextBillingDate|date('m/d/Y') }}{% else %}N/A{% endif %}" readonly>
+                            </div>
+                            
+                            <div class="section-header">Credits</div>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="p-3 border rounded">
+                                        <h4>{{ user.credits }}</h4>
+                                        <p class="mb-0 text-muted">Subscription Credits</p>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 border rounded">
+                                        <h4>{{ user.totalAddonCredits }}</h4>
+                                        <p class="mb-0 text-muted">Add-on Credits</p>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <a href="{{ path('app_buy_credits') }}" class="btn btn-primary w-100">
+                                        <i class="fas fa-coins me-2"></i> Buy Additional Credits
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Connected Services and Security Settings -->
+                <div class="col-md-6">
+                    <!-- Connected Services -->
+                    <div class="mantis-card mb-4">
+                        <div class="card-header">
+                            <h5 class="mantis-card-title">Connected Services</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-4">Manage your connections to e-commerce platforms and other services.</p>
+                            
+                            <div class="mb-4">
+                                <!-- WooCommerce Connection -->
+                                <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fab fa-wordpress text-primary me-2"></i> WooCommerce
+                                        </h6>
+                                        {% if integration_statuses.woocommerce is defined and integration_statuses.woocommerce %}
+                                            <small class="text-success">
+                                                Connected to: {{ user.woocommerceStoreUrl|default('Your Store') }}
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted">Not connected</small>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{{ path('app_woocommerce_connect') }}" class="btn btn-sm 
+                                        {% if integration_statuses.woocommerce is defined and integration_statuses.woocommerce %}
+                                            btn-outline-primary
+                                        {% else %}
+                                            btn-primary
+                                        {% endif %}">
+                                        {% if integration_statuses.woocommerce is defined and integration_statuses.woocommerce %}
+                                            Manage
+                                        {% else %}
+                                            Connect
+                                        {% endif %}
+                                    </a>
+                                </div>
+                                
+                                <!-- Shopify Connection - Coming Soon -->
+                                <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fab fa-shopify text-muted me-2"></i> Shopify
+                                        </h6>
+                                        <small class="text-muted">Integration coming soon</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" disabled>
+                                        Coming Soon
+                                    </button>
+                                </div>
+                                
+                                <!-- Magento Connection - Coming Soon -->
+                                <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-shopping-cart text-muted me-2"></i> Magento
+                                        </h6>
+                                        <small class="text-muted">Integration coming soon</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" disabled>
+                                        Coming Soon
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <a href="{{ path('app_integrations_manage') }}" class="btn btn-primary">
+                                    <i class="fas fa-cog me-2"></i> Manage All Integrations
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Account Security -->
+                    <div class="mantis-card mb-4">
+                        <div class="card-header">
+                            <h5 class="mantis-card-title">Account Security</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="section-header">Password Settings</div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" value="••••••••" readonly>
+                                    <a href="{{ path('app_change_password') }}" class="btn btn-outline-primary">Change</a>
+                                </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="section-header">Account Verification</div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div>
+                                        <h6 class="mb-1">Email Verification</h6>
+                                        <small class="text-muted">Verify your email address for additional security</small>
+                                    </div>
+                                    <div class="ms-auto">
+                                    {% if user.isVerified %}
+                                            <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                            <a href="{{ path('app_verify_email') }}" class="btn btn-sm btn-warning">Verify Email</a>
+                                    {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="section-header">Account Actions</div>
+                            <div class="d-grid gap-2">
+                                <a href="{{ path('app_logout') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="{{ asset('assets/mantis/js/mantis-bootstrap.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Profile - RoboSEO{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('assets/mantis/css/mantis-bootstrap.css') }}">
+    <style>
+        /* Custom styles for the account page */
+        body {
+            background-color: #f5f7fb;
+        }
+        
+        /* Hide the original navbar */
+        body > nav.navbar.navbar-expand-lg.navbar-dark.bg-dark {
+            display: none !important;
+        }
+        
+        /* Force display of Mantis navbar */
+        .mantis-navbar {
+            display: block !important;
+        }
+        
+        /* Card styling */
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Section headers */
+        .section-header {
+            font-size: 1.2rem;
+            color: #004080;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="mantis-app-container">
+    <div class="mantis-content">
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="mb-4">Edit Profile</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ path('app_account') }}">My Account</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit Profile</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="mantis-card mb-4">
+                        <div class="card-header">
+                            <h5 class="mantis-card-title">Personal Information</h5>
+                        </div>
+                        <div class="card-body">
+                            {% for flash_message in app.flashes('success') %}
+                                <div class="alert alert-success">
+                                    {{ flash_message }}
+                                </div>
+                            {% endfor %}
+                            
+                            {% for flash_message in app.flashes('error') %}
+                                <div class="alert alert-danger">
+                                    {{ flash_message }}
+                                </div>
+                            {% endfor %}
+                            
+                            {{ form_start(profileForm) }}
+                                <div class="mb-3">
+                                    {{ form_label(profileForm.firstName) }}
+                                    {{ form_widget(profileForm.firstName) }}
+                                    {{ form_errors(profileForm.firstName) }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form_label(profileForm.lastName) }}
+                                    {{ form_widget(profileForm.lastName) }}
+                                    {{ form_errors(profileForm.lastName) }}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    <a href="{{ path('app_account') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i> Back to Account
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i> Save Changes
+                                    </button>
+                                </div>
+                            {{ form_end(profileForm) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="{{ asset('assets/mantis/js/mantis-bootstrap.js') }}"></script>
+{% endblock %}

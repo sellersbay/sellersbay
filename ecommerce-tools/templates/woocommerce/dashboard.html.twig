@@ -9,7 +9,18 @@
             <div class="card shadow mb-4">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h1 class="h3 mb-0">WooCommerce Integration</h1>
+                        <div class="d-flex align-items-center">
+                            <h1 class="h3 mb-0">WooCommerce Integration</h1>
+                            {% if is_granted('ROLE_PREMIUM') %}
+                                <span class="badge bg-success ms-3 d-flex align-items-center">
+                                    <i class="fas fa-crown me-1"></i> Premium
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-3 d-flex align-items-center">
+                                    <i class="fas fa-user me-1"></i> Regular
+                                </span>
+                            {% endif %}
+                        </div>
                         <div>
                             <a href="{{ path('app_woocommerce_connect') }}" class="btn btn-primary">
                                 <i class="fas fa-plug"></i> Connect Store
@@ -406,6 +417,114 @@
                             </div>
                         </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Regular vs Premium Accounts</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info bg-opacity-10">
+                                    <h5 class="card-title mb-0"><i class="fas fa-robot me-2"></i> Regular Account</h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="mb-3">Standard Features:</h6>
+                                    <ul class="list-group mb-3">
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Target Keyphrase Generation
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Meta Title Creation
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Product Descriptions
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Short Descriptions
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Meta Descriptions
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-check text-success me-2"></i> Image Alt Text
+                                        </li>
+                                    </ul>
+                                    <p class="card-text">
+                                        <i class="fas fa-info-circle text-info me-2"></i>
+                                        Uses GPT-3.5 Turbo model (0.5 credits per generation)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary bg-opacity-10">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-crown text-primary me-2"></i> Premium Account
+                                        {% if is_granted('ROLE_PREMIUM') %}
+                                            <span class="badge bg-success ms-2">Activated</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">Upgrade Required</span>
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="mb-3">All Regular Features Plus:</h6>
+                                    <ul class="list-group mb-3">
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Enhanced Prompts
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-star text-warning me-2"></i> SEO Keywords Extraction
+                                                <span class="ms-auto badge bg-primary">Premium</span>
+                                            </div>
+                                            <div class="text-muted small mt-1">
+                                                Comprehensive list of 15-20 SEO keywords with search intent grouping to improve search rankings
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-star text-warning me-2"></i> Social Media Post Creation
+                                                <span class="ms-auto badge bg-primary">Premium</span>
+                                            </div>
+                                            <div class="text-muted small mt-1">
+                                                Ready-to-use social media content with engaging copy, hashtags, and calls-to-action
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Custom Tone Selection
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-2"></i> Competitor URL Analysis
+                                            <span class="ms-auto badge bg-primary">Premium</span>
+                                        </li>
+                                    </ul>
+                                    <p class="card-text">
+                                        <i class="fas fa-bolt text-warning me-2"></i>
+                                        Uses GPT-4 Turbo model (1 credit per generation)
+                                    </p>
+                                    {% if not is_granted('ROLE_PREMIUM') %}
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ path('app_subscription_plans') }}" class="btn btn-primary">
+                                                <i class="fas fa-crown me-2"></i> Upgrade to Premium
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

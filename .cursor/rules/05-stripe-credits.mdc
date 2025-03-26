@@ -1,0 +1,7 @@
+# 🧾 Stripe & Credit System
+
+- Require Stripe payment for AI-powered processing
+- Track per-user credit usage
+- Store transaction logs securely
+- Admin panel must allow pricing tier updates
+- Alert users when **credits are low or insufficient**

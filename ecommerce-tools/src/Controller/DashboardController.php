@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\WooCommerceProductRepository;
+use App\Service\IntegrationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,6 +18,7 @@ class DashboardController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function index(
         WooCommerceProductRepository $woocommerceProductRepository,
+        IntegrationService $integrationService,
         CacheInterface $cache = null
     ): Response {
         /** @var User $user */
@@ -27,24 +29,43 @@ class DashboardController extends AbstractController
         
         // Try to get data from cache if available
         $dashboardData = $cache 
-            ? $cache->get($cacheKey, function (ItemInterface $item) use ($user, $woocommerceProductRepository) {
+            ? $cache->get($cacheKey, function (ItemInterface $item) use ($user, $woocommerceProductRepository, $integrationService) {
                 $item->expiresAfter(300); // Cache for 5 minutes
-                return $this->prepareDashboardData($user, $woocommerceProductRepository);
+                return $this->prepareDashboardData($user, $woocommerceProductRepository, $integrationService);
             })
-            : $this->prepareDashboardData($user, $woocommerceProductRepository);
+            : $this->prepareDashboardData($user, $woocommerceProductRepository, $integrationService);
 
         return $this->render('dashboard/index.html.twig', $dashboardData);
     }
     
     /**
+     * AJAX endpoint for refreshing recent activity
+     */
+    #[Route('/dashboard/recent-activity', name: 'app_dashboard_recent_activity')]
+    #[IsGranted('ROLE_USER')]
+    public function recentActivity(WooCommerceProductRepository $woocommerceProductRepository): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $recentProducts = $woocommerceProductRepository->findRecentProductsByUser($user);
+        
+        return $this->render('dashboard/_recent_activity_list.html.twig', [
+            'recent_products' => $recentProducts
+        ]);
+    }
+    
+    /**
      * Prepare all data needed for the dashboard
      */
-    private function prepareDashboardData(User $user, WooCommerceProductRepository $woocommerceProductRepository): array
+    private function prepareDashboardData(User $user, WooCommerceProductRepository $woocommerceProductRepository, IntegrationService $integrationService): array
     {
         // Basic dashboard data
         $woocommerceProductCount = $woocommerceProductRepository->countWooCommerceProductsByUser($user);
         $totalProductCount = $woocommerceProductRepository->count(['owner' => $user]);
         $recentProducts = $woocommerceProductRepository->findRecentProductsByUser($user);
+        
+        // Get integration statuses
+        $integrationStatuses = $integrationService->getIntegrationStatuses($user);
         
         // Enhanced dashboard data
         $productCategories = $woocommerceProductRepository->getProductCountsByCategory();
@@ -60,6 +81,7 @@ class DashboardController extends AbstractController
             'product_categories' => $productCategories,
             'monthly_activity' => $monthlyActivity,
             'content_stats' => $contentStats,
+            'integration_statuses' => $integrationStatuses,
             'last_updated' => new \DateTime(),
         ];
     }

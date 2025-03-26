@@ -1,0 +1,8 @@
+# 🎨 Twig Templating Rules
+
+- Use `base.html.twig` and template inheritance
+- Group by feature under folders (`dashboard/`, `auth/`, etc.)
+- Use `{% include %}` for partials
+- Escape all output, use `|raw` **only when safe**
+- Use `{% trans %}` for text
+- Kebab-case filenames, snake_case variables

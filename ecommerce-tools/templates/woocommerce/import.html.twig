@@ -305,6 +305,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let operationType = ''; // 'import' or 'delete'
     let isDownloading = false; // Track download state
     let duplicateProducts = []; // Track duplicate products
+    let uniqueProductIds = new Set(); // Track unique product IDs to avoid counting duplicates
+    let actualTotalProducts = 0; // Accurate count of unique products
     
     // Variables for operations
     let selectedProductIds = [];
@@ -809,8 +811,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                // Add new products to our array
+                // Add new products to our array and track unique products by ID
                 products = [...products, ...data.products];
+                
+                // Count unique products by ID
+                let uniqueProductsInBatch = 0;
+                data.products.forEach(product => {
+                    if (!uniqueProductIds.has(product.id)) {
+                        uniqueProductIds.add(product.id);
+                        uniqueProductsInBatch++;
+                    }
+                });
+                
+                // Update our accurate total
+                actualTotalProducts = uniqueProductIds.size;
                 
                 // Update pagination information
                 const currentCategoryTotal = parseInt(data.total, 10);
@@ -818,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentPage = parseInt(data.currentPage, 10);
                 
                 // Debug product count
-                console.log(`API returned ${data.products.length} products`);
+                console.log(`API returned ${data.products.length} products (${uniqueProductsInBatch} unique)`);
                 
                 // Make sure products table is visible, but keep download container visible too
                 document.querySelector('.table-responsive').style.display = 'block';
@@ -853,10 +867,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Show category-specific progress
                     const categoryName = categoriesBeingProcessed[currentCategoryIndex];
                     importStatus.textContent = `Downloading category ${currentCategoryIndex + 1}/${categoriesBeingProcessed.length}: ${categoryName}`;
-                    progressStats.textContent = `${products.length} products loaded in total`;
+                    progressStats.textContent = `${actualTotalProducts} unique products loaded (${products.length} total items)`;
                 } else {
                     // Generic progress info
-                    importStatus.textContent = `Loading products (${products.length} loaded so far)...`;
+                    importStatus.textContent = `Loading products (${actualTotalProducts} unique products loaded)...`;
                     progressStats.textContent = `Page ${currentPage} of ${currentCategoryPages}`;
                 }
                 
@@ -906,9 +920,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } else {
                         // All categories are processed
-                        // Count non-duplicate products (ones that weren't already imported)
-                        const uniqueProductsCount = products.filter(p => !p.imported).length;
-                        console.log('All categories processed. Total unique products:', uniqueProductsCount);
+                            // Count non-duplicate products (ones that weren't already imported)
+                            const uniqueProductsCount = actualTotalProducts;
+                            console.log('All categories processed. Total unique products:', uniqueProductsCount);
                         
                         // Update the main category filter with all category data
                         populateCategoryFilters(allCategories);
@@ -940,12 +954,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             step2SelectCategories.classList.remove('d-none');
                             
                             // Show a success message with accurate counts
-                            const uniqueCount = products.filter(p => !p.imported).length;
+                            const uniqueCount = uniqueProductIds.size;
                             const duplicateCount = duplicateProducts.length;
                             const alert = document.createElement('div');
                             alert.className = 'alert alert-success alert-dismissible fade show';
                             alert.innerHTML = `
-                                <strong>Success!</strong> Downloaded ${uniqueCount} products from ${categoriesBeingProcessed.length} categories.
+                                <strong>Success!</strong> Downloaded ${uniqueCount} unique products from ${categoriesBeingProcessed.length} categories.
                                 ${duplicateCount > 0 ? `<br>${duplicateCount} duplicate products were skipped.` : ''}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             `;
