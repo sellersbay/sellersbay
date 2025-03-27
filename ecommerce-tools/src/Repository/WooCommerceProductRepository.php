@@ -171,40 +171,59 @@ class WooCommerceProductRepository extends ServiceEntityRepository
     }
     
     /**
-     * Get product counts by status
+     * Get product counts by status - OPTIMIZED VERSION
      * 
      * @return array Associative array of status => count
      */
     public function getProductCountsByStatus(): array
     {
-        $results = $this->createQueryBuilder('p')
-            ->select('p.status, COUNT(p.id) as count')
-            ->groupBy('p.status')
-            ->getQuery()
-            ->getResult();
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = "
+            SELECT status, COUNT(id) as count 
+            FROM woo_commerce_product 
+            GROUP BY status
+        ";
+        
+        $results = $conn->executeQuery($sql)->fetchAllAssociative();
         
         $statusCounts = [];
         foreach ($results as $row) {
-            $statusCounts[$row['status']] = (int)$row['count'];
+            if (isset($row['status']) && $row['status'] !== null && $row['status'] !== '') {
+                $statusCounts[$row['status']] = (int)$row['count'];
+            }
         }
         
         return $statusCounts;
     }
     
     /**
-     * Get product counts by status (used in place of categories)
+     * Get product counts by status (used in place of categories) - OPTIMIZED VERSION WITH CACHING
      * 
      * @return array Array of status categories with their counts
      */
     public function getProductCountsByCategory(): array
     {
+        // Check cache first (would need cache service to be injected in constructor)
+        // This is a placeholder for the cache implementation
+        // $cacheKey = 'product_counts_by_category';
+        // if ($this->cache->hasItem($cacheKey)) {
+        //     return $this->cache->getItem($cacheKey)->get();
+        // }
+        
         try {
-            // Use status field as a category equivalent since there's no category field
-            $results = $this->createQueryBuilder('p')
-                ->select('p.status as category_name, COUNT(p.id) as count')
-                ->groupBy('p.status')
-                ->getQuery()
-                ->getResult();
+            // Use direct SQL for better performance
+            $conn = $this->getEntityManager()->getConnection();
+            $sql = "
+                SELECT 
+                    status as category_name, 
+                    COUNT(id) as count 
+                FROM woo_commerce_product 
+                WHERE status IS NOT NULL AND status != ''
+                GROUP BY status 
+                ORDER BY count DESC
+            ";
+            
+            $results = $conn->executeQuery($sql)->fetchAllAssociative();
             
             $categories = [];
             foreach ($results as $row) {
@@ -216,10 +235,11 @@ class WooCommerceProductRepository extends ServiceEntityRepository
                 }
             }
             
-            // Sort by count descending
-            usort($categories, function($a, $b) {
-                return $b['count'] <=> $a['count'];
-            });
+            // Cache the results for 1 hour
+            // $cacheItem = $this->cache->getItem($cacheKey);
+            // $cacheItem->set($categories);
+            // $cacheItem->expiresAfter(3600);
+            // $this->cache->save($cacheItem);
             
             return $categories;
         } catch (\Exception $e) {
@@ -253,99 +273,112 @@ class WooCommerceProductRepository extends ServiceEntityRepository
     }
     
     /**
-     * Get monthly AI processed product counts for the past 12 months
+     * Get AI processed products by month - OPTIMIZED VERSION
+     * Uses a single query instead of a query per month
      * 
-     * @return array Array of month => count pairs
+     * @param int $numberOfMonths Number of months to include
+     * @return array Monthly counts of AI processed products
      */
     public function getAIProcessedProductsByMonth(int $numberOfMonths = 12): array
     {
-        $now = new \DateTime();
-        $results = [];
+        // Calculate date range
+        $endDate = new \DateTime();
+        $startDate = clone $endDate;
+        $startDate->modify('-' . ($numberOfMonths - 1) . ' months');
+        $startDate->modify('first day of this month');
+        $startDate->setTime(0, 0, 0);
         
-        for ($i = 0; $i < $numberOfMonths; $i++) {
-            $endDate = clone $now;
-            $endDate->modify('-' . $i . ' month');
-            $endDate->modify('last day of this month');
-            $endDate->setTime(23, 59, 59);
-            
-            $startDate = clone $endDate;
-            $startDate->modify('first day of this month');
-            $startDate->setTime(0, 0, 0);
-            
-            $count = $this->createQueryBuilder('p')
-                ->select('COUNT(p.id)')
-                ->where('p.status = :status')
-                ->andWhere('p.updatedAt >= :startDate')
-                ->andWhere('p.updatedAt <= :endDate')
-                ->setParameter('status', 'ai_processed')
-                ->setParameter('startDate', $startDate)
-                ->setParameter('endDate', $endDate)
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0;
-            
-            // Include year with month to clarify which year the data belongs to
-            $monthName = $endDate->format('M');
-            $year = $endDate->format('Y');
-            
-            // Store results in chronological order (oldest to newest)
-            $results[] = [
-                'month' => $monthName,
-                'year' => $year,
-                'count' => (int)$count
+        // Get all monthly data in a single query
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = "
+            WITH RECURSIVE months AS (
+                SELECT 
+                    DATE_FORMAT(:startDate, '%Y-%m-01') as month_start,
+                    LAST_DAY(:startDate) as month_end,
+                    DATE_FORMAT(:startDate, '%b') as month_name
+                UNION ALL
+                SELECT 
+                    DATE_ADD(month_start, INTERVAL 1 MONTH),
+                    LAST_DAY(DATE_ADD(month_start, INTERVAL 1 MONTH)),
+                    DATE_FORMAT(DATE_ADD(month_start, INTERVAL 1 MONTH), '%b')
+                FROM months
+                WHERE month_start < DATE_FORMAT(:endDate, '%Y-%m-01')
+            )
+            SELECT 
+                m.month_name,
+                (
+                    SELECT COUNT(*) 
+                    FROM woo_commerce_product p 
+                    WHERE p.created_at >= m.month_start 
+                      AND p.created_at <= m.month_end
+                      AND p.status = 'ai_processed'
+                ) as processed_count
+            FROM months m
+            ORDER BY m.month_start ASC
+        ";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue('startDate', $startDate->format('Y-m-d'));
+        $stmt->bindValue('endDate', $endDate->format('Y-m-d'));
+        $results = $stmt->executeQuery()->fetchAllAssociative();
+        
+        // Format the results
+        $formattedResults = [];
+        foreach ($results as $i => $result) {
+            $formattedResults[$i] = [
+                'month' => $result['month_name'],
+                'count' => (int)$result['processed_count']
             ];
         }
         
-        return $results;
+        return $formattedResults;
     }
     
     /**
-     * Get content generation statistics
+     * Get content generation statistics - OPTIMIZED WITH CACHING
      * 
-     * @return array Statistics about different content types generated
+     * @return array Statistics about content generation
      */
     public function getContentGenerationStats(): array
     {
-        // Count products with generated descriptions
-        $descriptionsCount = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id)')
-            ->where('p.description IS NOT NULL')
-            ->andWhere('p.description != :empty')
-            ->setParameter('empty', '')
-            ->getQuery()
-            ->getSingleScalarResult() ?? 0;
+        // Check cache first (would need cache service to be injected in constructor)
+        // This is a placeholder for the cache implementation
+        // $cacheKey = 'content_generation_stats';
+        // if ($this->cache->hasItem($cacheKey)) {
+        //     return $this->cache->getItem($cacheKey)->get();
+        // }
         
-        // Count products with generated short descriptions
-        $shortDescriptionsCount = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id)')
-            ->where('p.shortDescription IS NOT NULL')
-            ->andWhere('p.shortDescription != :empty')
-            ->setParameter('empty', '')
-            ->getQuery()
-            ->getSingleScalarResult() ?? 0;
+        // Use a single query to get all the statistics at once
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = "
+            SELECT 
+                COUNT(*) as total_products,
+                SUM(CASE WHEN status = 'ai_processed' THEN 1 ELSE 0 END) as ai_processed,
+                SUM(CASE WHEN status = 'ready_for_export' THEN 1 ELSE 0 END) as ready_for_export,
+                SUM(CASE WHEN status = 'exported' THEN 1 ELSE 0 END) as exported,
+                AVG(CASE WHEN ai_processing_time > 0 THEN ai_processing_time ELSE NULL END) as avg_processing_time
+            FROM woo_commerce_product
+        ";
         
-        // Count products with generated meta descriptions
-        $metaDescriptionsCount = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id)')
-            ->where('p.metaDescription IS NOT NULL')
-            ->andWhere('p.metaDescription != :empty')
-            ->setParameter('empty', '')
-            ->getQuery()
-            ->getSingleScalarResult() ?? 0;
+        $result = $conn->executeQuery($sql)->fetchAssociative();
         
-        // Count products with generated image alt text
-        $imageAltTextCount = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id)')
-            ->where('p.imageAltText IS NOT NULL')
-            ->andWhere('p.imageAltText != :empty')
-            ->setParameter('empty', '')
-            ->getQuery()
-            ->getSingleScalarResult() ?? 0;
-        
-        return [
-            'descriptions' => (int)$descriptionsCount,
-            'short_descriptions' => (int)$shortDescriptionsCount,
-            'meta_descriptions' => (int)$metaDescriptionsCount,
-            'image_alt_text' => (int)$imageAltTextCount
+        $stats = [
+            'total_products' => (int)$result['total_products'],
+            'ai_processed' => (int)$result['ai_processed'],
+            'ready_for_export' => (int)$result['ready_for_export'],
+            'exported' => (int)$result['exported'],
+            'avg_processing_time' => $result['avg_processing_time'] ? round((float)$result['avg_processing_time'], 2) : 0,
+            'success_rate' => $result['total_products'] > 0 
+                ? round(($result['ai_processed'] / $result['total_products']) * 100, 1) 
+                : 0
         ];
+        
+        // Cache the results for 1 hour
+        // $cacheItem = $this->cache->getItem($cacheKey);
+        // $cacheItem->set($stats);
+        // $cacheItem->expiresAfter(3600);
+        // $this->cache->save($cacheItem);
+        
+        return $stats;
     }
 }

@@ -345,7 +345,10 @@
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" id="{{ plan.id }}PlanActive" {% if plan.active %}checked{% endif %}>
                                             <label class="form-check-label" for="{{ plan.id }}PlanActive">
-                                                Active
+                                                <span class="status-text">Active</span>
+                                                <span class="badge {% if plan.active %}bg-success{% else %}bg-secondary{% endif %} ms-1 status-badge">
+                                                    {{ plan.active ? 'On' : 'Off' }}
+                                                </span>
                                             </label>
                                         </div>
                                     </div>
@@ -423,7 +426,10 @@
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" id="package{{ package.id }}Active" {% if package.active %}checked{% endif %}>
                                             <label class="form-check-label" for="package{{ package.id }}Active">
-                                                Active
+                                                <span class="status-text">Active</span>
+                                                <span class="badge {% if package.active %}bg-success{% else %}bg-secondary{% endif %} ms-1 status-badge">
+                                                    {{ package.active ? 'On' : 'Off' }}
+                                                </span>
                                             </label>
                                         </div>
                                     </div>
@@ -1583,11 +1589,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Handle toggle switches for subscription plans
-    const planToggleSwitches = document.querySelectorAll('.subscription-plan-card .form-check-input[type="checkbox"]');
+    const planToggleSwitches = document.querySelectorAll('.form-check-input[id$="PlanActive"]');
     planToggleSwitches.forEach(toggle => {
         toggle.addEventListener('change', function() {
             const planId = this.id.replace('PlanActive', '');
             const isActive = this.checked;
+            
+            console.log(`Toggle switch changed for plan ${planId} - Active: ${isActive}`);
             
             // Show a loading indicator
             const parentCard = this.closest('.subscription-plan-card');
@@ -1599,9 +1607,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const planPrice = parseFloat(parentCard.querySelector('.h1.mb-0').textContent.replace('$', ''));
             const planCredits = parseInt(parentCard.querySelector('.badge.bg-primary').textContent.match(/\d+/)[0]);
             
+            console.log(`Plan data: Name=${planName}, Price=${planPrice}, Credits=${planCredits}`);
+            
             // Create a comprehensive form data object with all required fields
             const formData = new FormData();
-            formData.append('editPlanIsActive', isActive ? '1' : '');
+            formData.append('editPlanIsActive', isActive ? '1' : '0'); // Always use "1" or "0" values for consistency
             formData.append('_csrf_token', '{{ csrf_token('edit_plan') }}');
             formData.append('editPlanName', planName);
             formData.append('editPlanPrice', planPrice);
@@ -1610,6 +1620,10 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('editPlanTerm', 'monthly');
             formData.append('editPlanDiscount', '0');
             formData.append('editPlanDisplayOrder', '1');
+            
+            // Preserve featured status if we can determine it
+            const isFeatured = parentCard.classList.contains('featured');
+            formData.append('editPlanIsFeatured', isFeatured ? '1' : '0'); // Always use explicit values
             
             // Include feature values based on what's displayed in the card
             formData.append('editFeatureProductDesc', 'on');
@@ -1624,6 +1638,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if Premium AI feature is active
             if (parentCard.querySelector('.plan-feature:nth-child(5):not(.text-muted)')) {
                 formData.append('editFeaturePremiumAI', 'on');
+            }
+            
+            // For debugging, log the form data
+            console.log('Sending form data to server:');
+            for (const pair of formData.entries()) {
+                console.log(`${pair[0]}: ${pair[1]}`);
             }
             
             // Use the existing route to update the plan with cookies included for authentication
@@ -1661,6 +1681,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Restore the card's appearance
                 parentCard.style.opacity = '1';
+                
+                // Update the visual status indicator
+                const statusBadge = parentCard.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-secondary'} ms-1 status-badge`;
+                    statusBadge.textContent = isActive ? 'On' : 'Off';
+                }
             })
             .catch(error => {
                 console.error('Error updating plan:', error);
@@ -1692,37 +1719,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Restore the card's appearance
                 parentCard.style.opacity = '1';
+                
+                // Revert the visual status indicator
+                const statusBadge = parentCard.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `badge ${!isActive ? 'bg-success' : 'bg-secondary'} ms-1 status-badge`;
+                    statusBadge.textContent = !isActive ? 'On' : 'Off';
+                }
             });
         });
     });
     
     // Similar code for package add-on toggle switches
-    const packageToggleSwitches = document.querySelectorAll('.card-footer .form-check-input[id^="package"]');
+    const packageToggleSwitches = document.querySelectorAll('.form-check-input[id$="PackageActive"]');
     packageToggleSwitches.forEach(toggle => {
         toggle.addEventListener('change', function() {
-            const packageId = this.id.replace('package', '').replace('Active', '');
+            const packageId = this.id.replace('PackageActive', '');
             const isActive = this.checked;
+            
+            console.log(`Toggle switch changed for package ${packageId} - Active: ${isActive}`);
             
             // Show a loading indicator
             const parentCard = this.closest('.subscription-plan-card');
             parentCard.style.opacity = '0.6';
             
-            // Create form data
-            const formData = new FormData();
-            formData.append('editPackageIsActive', isActive ? '1' : '');
-            formData.append('_csrf_token', '{{ csrf_token('edit_package') }}');
+            // Extract all package data from the card to avoid missing required fields
+            const packageName = parentCard.querySelector('h3').textContent;
+            const packagePriceStandard = parseFloat(parentCard.querySelector('.h1.mb-0').textContent.replace('$', ''));
+            const packagePricePremium = parseFloat(parentCard.querySelector('.h5.mt-2').textContent.replace('$', ''));
+            const packageCredits = parseInt(parentCard.querySelector('.badge.bg-warning').textContent.match(/\d+/)[0]);
             
-            // Use the existing route to update the package
+            console.log(`Package data: Name=${packageName}, Price Standard=${packagePriceStandard}, Price Premium=${packagePricePremium}, Credits=${packageCredits}`);
+            
+            // Create a comprehensive form data object with all required fields
+            const formData = new FormData();
+            formData.append('editPackageIsActive', isActive ? '1' : '0'); // Always use "1" or "0" values for consistency
+            formData.append('_csrf_token', '{{ csrf_token('edit_package') }}');
+            formData.append('editPackageName', packageName);
+            formData.append('editPackagePriceStandard', packagePriceStandard);
+            formData.append('editPackagePricePremium', packagePricePremium);
+            formData.append('editPackageCredits', packageCredits);
+            formData.append('editPackageDescription', ''); // Default to empty if not found
+            formData.append('editPackageDiscount', '0');
+            formData.append('editPackageDisplayOrder', '1');
+            
+            // Preserve featured status if we can determine it
+            const isFeatured = parentCard.classList.contains('featured');
+            formData.append('editPackageIsFeatured', isFeatured ? '1' : '0'); // Always use explicit values
+            
+            // For debugging, log the form data
+            console.log('Sending form data to server:');
+            for (const pair of formData.entries()) {
+                console.log(`${pair[0]}: ${pair[1]}`);
+            }
+            
+            // Use the existing route to update the package with cookies included for authentication
             fetch('{{ path('app_admin_edit_package_addon', {'id': 'PACKAGE_ID'}) }}'.replace('PACKAGE_ID', packageId), {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Server responded with an error');
                 }
                 
-                // Create success notification
+                // Create a toast or notification
                 const toast = document.createElement('div');
                 toast.className = 'position-fixed top-0 end-0 p-3 mt-5';
                 toast.style.zIndex = '5000';
@@ -1746,6 +1808,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Restore the card's appearance
                 parentCard.style.opacity = '1';
+                
+                // Update the visual status indicator
+                const statusBadge = parentCard.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-secondary'} ms-1 status-badge`;
+                    statusBadge.textContent = isActive ? 'On' : 'Off';
+                }
             })
             .catch(error => {
                 console.error('Error updating package:', error);
@@ -1777,6 +1846,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Restore the card's appearance
                 parentCard.style.opacity = '1';
+                
+                // Revert the visual status indicator
+                const statusBadge = parentCard.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = `badge ${!isActive ? 'bg-success' : 'bg-secondary'} ms-1 status-badge`;
+                    statusBadge.textContent = !isActive ? 'On' : 'Off';
+                }
             });
         });
     });
@@ -2076,11 +2152,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('editPlanStripeID').value = data.stripeProductId || '';
                     document.getElementById('editPlanDisplayOrder').value = data.displayOrder || 1;
                     
-                    // Set checkboxes
-                    // Explicitly set checkbox states - using Boolean conversion for clarity
-                    // Force checkbox states to be properly set based on truthy values
-                    document.getElementById('editPlanIsFeatured').checked = data.isFeatured === true || data.isFeatured === 1 || data.isFeatured === "1";
-                    document.getElementById('editPlanIsActive').checked = data.isActive === true || data.isActive === 1 || data.isActive === "1";
+                    // Ensure proper handling of display_order vs displayOrder properties
+                    if (document.getElementById('editPlanDisplayOrder').value == 1 && data.display_order) {
+                        document.getElementById('editPlanDisplayOrder').value = data.display_order;
+                    }
+                    
+                    // Set checkboxes based on proper property names (both active/isActive and featured/isFeatured might be used)
+                    const isFeatured = data.featured === true || data.featured === 1 || data.featured === "1" || 
+                                    data.isFeatured === true || data.isFeatured === 1 || data.isFeatured === "1";
+                    const isActive = data.active === true || data.active === 1 || data.active === "1" || 
+                                  data.isActive === true || data.isActive === 1 || data.isActive === "1";
+                    
+                    document.getElementById('editPlanIsFeatured').checked = isFeatured;
+                    document.getElementById('editPlanIsActive').checked = isActive;
+                    
+                    // Also set hidden inputs to ensure data is properly sent in the form
+                    // Create or update hidden fields to ensure consistent data submission
+                    let featuredField = document.getElementById('editPlanIsFeaturedValue');
+                    if (!featuredField) {
+                        featuredField = document.createElement('input');
+                        featuredField.type = 'hidden';
+                        featuredField.id = 'editPlanIsFeaturedValue';
+                        featuredField.name = 'editPlanIsFeatured';
+                        form.appendChild(featuredField);
+                    }
+                    featuredField.value = isFeatured ? '1' : '0';
+                    
+                    let activeField = document.getElementById('editPlanIsActiveValue');
+                    if (!activeField) {
+                        activeField = document.createElement('input');
+                        activeField.type = 'hidden';
+                        activeField.id = 'editPlanIsActiveValue';
+                        activeField.name = 'editPlanIsActive';
+                        form.appendChild(activeField);
+                    }
+                    activeField.value = isActive ? '1' : '0';
+                    
+                    // Update hidden values when checkboxes are toggled
+                    document.getElementById('editPlanIsFeatured').addEventListener('change', function() {
+                        document.getElementById('editPlanIsFeaturedValue').value = this.checked ? '1' : '0';
+                    });
+                    
+                    document.getElementById('editPlanIsActive').addEventListener('change', function() {
+                        document.getElementById('editPlanIsActiveValue').value = this.checked ? '1' : '0';
+                    });
                     
                     // Set feature checkboxes
                     if (data.features) {

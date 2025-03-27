@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Psr\Log\LoggerInterface;
 
 
 // Proper admin role requirement
@@ -33,6 +34,7 @@ class AdminController extends AbstractController
     private UserPasswordHasherInterface $passwordHasher;
     private TransactionRepository $transactionRepository;
     private PackageAddOnRepository $packageAddOnRepository;
+    private LoggerInterface $logger;
 
     public function __construct(
         EntityManagerInterface $entityManager,
@@ -40,7 +42,8 @@ class AdminController extends AbstractController
         WooCommerceProductRepository $wooCommerceProductRepository,
         UserPasswordHasherInterface $passwordHasher,
         TransactionRepository $transactionRepository,
-        PackageAddOnRepository $packageAddOnRepository
+        PackageAddOnRepository $packageAddOnRepository,
+        LoggerInterface $logger
     ) {
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
@@ -48,6 +51,7 @@ class AdminController extends AbstractController
         $this->passwordHasher = $passwordHasher;
         $this->transactionRepository = $transactionRepository;
         $this->packageAddOnRepository = $packageAddOnRepository;
+        $this->logger = $logger;
     }
 
     #[Route('/', name: 'app_admin_dashboard')]
@@ -861,11 +865,12 @@ class AdminController extends AbstractController
     public function subscriptionsManagement(SubscriptionPlanRepository $subscriptionPlanRepository): Response
     {
         // Get subscription plans from the database - wrapped in try/catch to handle any DB errors
+        $subscriptionPlans = [];
+        
         try {
             $plans = $subscriptionPlanRepository->findAll();
             
             // Convert plans to the format expected by the template
-            $subscriptionPlans = [];
             foreach ($plans as $plan) {
                 $planData = $plan->toArray();
                 // Add mock subscriber counts for now (in a real app, would be calculated)
@@ -894,100 +899,7 @@ class AdminController extends AbstractController
         } catch (\Exception $e) {
             // Log the error but don't crash the page
             error_log('Error loading subscription plans: ' . $e->getMessage());
-            
-            // Initialize with empty array to use default plans
-            $subscriptionPlans = [];
-        }
-        
-        // If no plans exist or there was a database error, initialize with default plans
-        if (empty($subscriptionPlans)) {
-            $subscriptionPlans = [
-                [
-                    'id' => 'micro',
-                    'name' => 'Micro',
-                    'price' => 9.00,
-                    'credits' => 10,
-                    'active' => true,
-                    'featured' => false,
-                    'subscribers' => 15,
-                    'features' => [
-                        'product_descriptions' => true,
-                        'meta_descriptions' => true,
-                        'image_alt_text' => true,
-                        'seo_keywords' => false,
-                        'premium_ai' => false
-                    ],
-                    'discount' => null
-                ],
-                [
-                    'id' => 'starter',
-                    'name' => 'Starter',
-                    'price' => 29.00,
-                    'credits' => 50,
-                    'active' => true,
-                    'featured' => false,
-                    'subscribers' => 32,
-                    'features' => [
-                        'product_descriptions' => true,
-                        'meta_descriptions' => true,
-                        'image_alt_text' => true,
-                        'seo_keywords' => false,
-                        'premium_ai' => false
-                    ],
-                    'discount' => null
-                ],
-                [
-                    'id' => 'growth',
-                    'name' => 'Growth',
-                    'price' => 79.00,
-                    'credits' => 250,
-                    'active' => true,
-                    'featured' => true,
-                    'subscribers' => 19,
-                    'features' => [
-                        'product_descriptions' => true,
-                        'meta_descriptions' => true,
-                        'image_alt_text' => true,
-                        'seo_keywords' => true,
-                        'premium_ai' => false
-                    ],
-                    'discount' => null
-                ],
-                [
-                    'id' => 'pro',
-                    'name' => 'Pro',
-                    'price' => 149.00,
-                    'credits' => 750,
-                    'active' => true,
-                    'featured' => false,
-                    'subscribers' => 7,
-                    'features' => [
-                        'product_descriptions' => true,
-                        'meta_descriptions' => true,
-                        'image_alt_text' => true,
-                        'seo_keywords' => true,
-                        'premium_ai' => true
-                    ],
-                    'discount' => null
-                ],
-                [
-                    'id' => 'enterprise',
-                    'name' => 'Enterprise',
-                    'price' => 249.00,
-                    'credits' => 2000,
-                    'active' => true,
-                    'featured' => false,
-                    'subscribers' => 3,
-                    'features' => [
-                        'product_descriptions' => true,
-                        'meta_descriptions' => true,
-                        'image_alt_text' => true,
-                        'seo_keywords' => true,
-                        'premium_ai' => true
-                    ],
-                    'discount' => null
-                ]
-            ];
+            // No fallback to default plans - we'll show the "no plans available" notice from the template
         }
         
         // Get recent subscribers (in a real app, would fetch from the database)
@@ -1305,50 +1217,138 @@ class AdminController extends AbstractController
     #[Route('/subscriptions/create', name: 'app_admin_create_subscription_plan', methods: ['POST'])]
     public function createSubscriptionPlan(Request $request, SubscriptionPlanRepository $subscriptionPlanRepository): Response
     {
-        // Get form data
-        $planName = $request->request->get('planName');
-        $planPrice = (float)$request->request->get('planPrice');
-        $planCredits = (int)$request->request->get('planCredits');
-        $planDescription = $request->request->get('planDescription');
-        $planTerm = $request->request->get('planTerm');
-        $planDiscount = (int)$request->request->get('planDiscount');
-        $planStripeID = $request->request->get('planStripeID');
-        $planDisplayOrder = (int)$request->request->get('planDisplayOrder', 1);
-        $planIsFeatured = $request->request->has('planIsFeatured');
-        $planIsActive = $request->request->has('planIsActive');
-        
-        // Get feature flags
-        $features = [
-            'product_descriptions' => $request->request->has('featureProductDesc'),
-            'meta_descriptions' => $request->request->has('featureMetaDesc'),
-            'image_alt_text' => $request->request->has('featureImageAlt'),
-            'seo_keywords' => $request->request->has('featureSeoKeywords'),
-            'premium_ai' => $request->request->has('featurePremiumAI')
-        ];
-        
-        // Create a new subscription plan
-        $plan = new SubscriptionPlan();
-        $plan->setName($planName);
-        $plan->setIdentifier(strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $planName)));
-        $plan->setPrice($planPrice);
-        $plan->setCredits($planCredits);
-        $plan->setDescription($planDescription);
-        $plan->setTerm($planTerm ?? 'monthly');
-        $plan->setDiscount($planDiscount ?: null);
-        $plan->setStripeProductId($planStripeID);
-        $plan->setDisplayOrder($planDisplayOrder);
-        $plan->setIsFeatured($planIsFeatured);
-        $plan->setIsActive($planIsActive);
-        $plan->setFeatures($features);
-        $plan->setCreatedAt(new \DateTimeImmutable());
-        $plan->setUpdatedAt(new \DateTimeImmutable());
-        
-        // Save to database
-        $this->entityManager->persist($plan);
-        $this->entityManager->flush();
-        
-        // Add flash message for success
-        $this->addFlash('success', 'Subscription plan "' . $planName . '" created successfully.');
+        try {
+            error_log("Starting to create subscription plan");
+            
+            // Get form data with logging
+            $planName = $request->request->get('planName');
+            $planPrice = (float)$request->request->get('planPrice');
+            $planCredits = (int)$request->request->get('planCredits');
+            $planDescription = $request->request->get('planDescription', '');
+            $planTerm = $request->request->get('planTerm', 'monthly');
+            $planDiscount = (int)$request->request->get('planDiscount', 0);
+            $planStripeID = $request->request->get('planStripeID', '');
+            $planDisplayOrder = (int)$request->request->get('planDisplayOrder', 1);
+            
+            error_log("Plan data: " . json_encode([
+                'name' => $planName,
+                'price' => $planPrice,
+                'credits' => $planCredits,
+                'displayOrder' => $planDisplayOrder
+            ]));
+            
+            // Check if a plan with this name already exists
+            $existingPlan = $subscriptionPlanRepository->findOneBy(['name' => $planName]);
+            if ($existingPlan) {
+                error_log("Plan with name '" . $planName . "' already exists");
+                $this->addFlash('warning', "A plan with the name '$planName' already exists. Please use a different name.");
+                return $this->redirectToRoute('app_admin_subscriptions');
+            }
+            
+            // Create identifier from name
+            $identifier = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $planName));
+            
+            // Check for duplicate identifier
+            $existingIdentifier = $subscriptionPlanRepository->findOneBy(['identifier' => $identifier]);
+            if ($existingIdentifier) {
+                // Make the identifier unique by adding timestamp
+                $identifier .= '_' . time();
+                error_log("Made identifier unique: " . $identifier);
+            }
+            
+            // Check for display order conflicts
+            $planWithSameOrder = $subscriptionPlanRepository->findOneBy(['displayOrder' => $planDisplayOrder]);
+            if ($planWithSameOrder) {
+                // Find the highest order number and increment
+                $highestPlan = $subscriptionPlanRepository->findOneBy([], ['displayOrder' => 'DESC']);
+                if ($highestPlan) {
+                    $planDisplayOrder = $highestPlan->getDisplayOrder() + 1;
+                    error_log("Adjusted display order to: " . $planDisplayOrder);
+                }
+            }
+            
+            // Get boolean parameters
+            $isFeaturedParam = $request->request->get('planIsFeatured');
+            $planIsFeatured = in_array($isFeaturedParam, ['1', 'on', 'true', true], true);
+            
+            $isActiveParam = $request->request->get('planIsActive');
+            $planIsActive = in_array($isActiveParam, ['1', 'on', 'true', true], true);
+            
+            error_log("Feature param: " . var_export($isFeaturedParam, true) . " => " . var_export($planIsFeatured, true));
+            error_log("Active param: " . var_export($isActiveParam, true) . " => " . var_export($planIsActive, true));
+            
+            // Get feature flags
+            $features = [
+                'product_descriptions' => $request->request->has('featureProductDesc'),
+                'meta_descriptions' => $request->request->has('featureMetaDesc'),
+                'image_alt_text' => $request->request->has('featureImageAlt'),
+                'seo_keywords' => $request->request->has('featureSeoKeywords'),
+                'premium_ai' => $request->request->has('featurePremiumAI')
+            ];
+            
+            // Start transaction
+            $this->entityManager->beginTransaction();
+            
+            try {
+                // Create the new plan
+                $plan = new SubscriptionPlan();
+                $plan->setName($planName);
+                $plan->setIdentifier($identifier);
+                $plan->setPrice($planPrice);
+                $plan->setCredits($planCredits);
+                $plan->setDescription($planDescription);
+                $plan->setTerm($planTerm);
+                $plan->setDiscount($planDiscount ?: null);
+                $plan->setStripeProductId($planStripeID);
+                $plan->setDisplayOrder($planDisplayOrder);
+                $plan->setIsFeatured($planIsFeatured);
+                $plan->setIsActive($planIsActive);
+                $plan->setFeatures($features);
+                // Creation and update dates are set by constructor
+                
+                // Log the values being set
+                error_log("Creating plan with display order: " . $planDisplayOrder);
+                error_log("Is active: " . ($planIsActive ? 'true' : 'false') . ', Is featured: ' . ($planIsFeatured ? 'true' : 'false'));
+                
+                // Save to database
+                $this->entityManager->persist($plan);
+                $this->entityManager->flush();
+                
+                // Verify creation
+                $newPlanId = $plan->getId();
+                
+                // Clear entity manager to ensure we're getting fresh data
+                $this->entityManager->clear();
+                
+                // Validate the newly created plan
+                $newPlan = $subscriptionPlanRepository->find($newPlanId);
+                if (!$newPlan) {
+                    throw new \Exception("Plan was not created successfully");
+                }
+                
+                error_log("Plan created successfully - ID: " . $newPlan->getId() . 
+                          ", Name: " . $newPlan->getName() . 
+                          ", DisplayOrder: " . $newPlan->getDisplayOrder());
+                
+                // Commit transaction
+                $this->entityManager->commit();
+                
+                // Add success message
+                $this->addFlash('success', 'Subscription plan "' . $planName . '" created successfully.');
+                
+            } catch (\Exception $transactionException) {
+                // Rollback on error
+                $this->entityManager->rollback();
+                error_log("Transaction error: " . $transactionException->getMessage());
+                throw $transactionException;
+            }
+            
+        } catch (\Exception $e) {
+            // Log error details
+            error_log("Error creating subscription plan: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            $this->addFlash('error', 'An error occurred while creating the subscription plan: ' . $e->getMessage());
+        }
         
         // Redirect back to subscriptions management page
         return $this->redirectToRoute('app_admin_subscriptions');
@@ -1358,32 +1358,72 @@ class AdminController extends AbstractController
     public function getSubscriptionPlan(SubscriptionPlanRepository $subscriptionPlanRepository, string $id): JsonResponse
     {
         try {
-            // Try to find the plan by numeric ID first
+            // Log the initial request
+            error_log("Retrieving subscription plan with ID: " . $id);
+            
+            // Try to find the plan using the repository first (revert to ORM approach)
             $plan = $subscriptionPlanRepository->find($id);
             
-            // If not found by ID, try to find by identifier (string code)
-            if (!$plan) {
+            // If not found by ID, try to find by identifier
+            if (!$plan && method_exists($subscriptionPlanRepository, 'findByIdentifier')) {
+                error_log("Plan not found by ID, trying identifier");
                 $plan = $subscriptionPlanRepository->findByIdentifier($id);
             }
             
             if (!$plan) {
+                error_log("Plan not found with ID or identifier: " . $id);
                 return new JsonResponse(['error' => 'Subscription plan not found'], 404);
             }
             
-            // Convert plan to array for JSON response
-            $planData = $plan->toArray();
-            $planData['displayOrder'] = $plan->getDisplayOrder();
-            $planData['stripeProductId'] = $plan->getStripeProductId();
+            // Convert plan to array data
+            $planData = [
+                'id' => $plan->getId(),
+                'name' => $plan->getName(),
+                'identifier' => $plan->getIdentifier(),
+                'price' => $plan->getPrice(),
+                'credits' => $plan->getCredits(),
+                'description' => $plan->getDescription(),
+                'term' => $plan->getTerm(),
+                'discount' => $plan->getDiscount(),
+                'displayOrder' => $plan->getDisplayOrder(),
+                'active' => $plan->isActive(),
+                'featured' => $plan->isFeatured(),
+                'stripeProductId' => $plan->getStripeProductId(),
+                'features' => $plan->getFeatures(),
+            ];
             
-            // Keep the original ID used to find the plan for consistency
-            // This ensures the same ID is used for editing
-            $planData['id'] = $plan->getId();
-            $planData['identifier'] = $plan->getIdentifier();
+            // Add alternative property names for compatibility
+            $planData['is_active'] = $planData['active'];
+            $planData['is_featured'] = $planData['featured'];
+            $planData['display_order'] = $planData['displayOrder'];
             
-            // Return as JSON
-            return new JsonResponse($planData);
+            // Also include ORM-generated toArray data for maximum compatibility
+            if (method_exists($plan, 'toArray')) {
+                $ormData = $plan->toArray();
+                foreach ($ormData as $key => $value) {
+                    if (!isset($planData[$key])) {
+                        $planData[$key] = $value;
+                    }
+                }
+            }
+            
+            // Log the data being returned
+            error_log("Returning plan data: " . json_encode(array_keys($planData)));
+            
+            // Return with cache-busting headers
+            $response = new JsonResponse($planData);
+            $response->setPublic();
+            $response->setMaxAge(0);
+            $response->headers->addCacheControlDirective('must-revalidate', true);
+            $response->headers->addCacheControlDirective('no-store', true);
+            
+            return $response;
+            
         } catch (\Exception $e) {
-            // Return error as JSON
+            // Log the full exception details
+            error_log("Error retrieving subscription plan: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
+            
             return new JsonResponse(['error' => 'An error occurred while retrieving the subscription plan: ' . $e->getMessage()], 500);
         }
     }
@@ -1392,32 +1432,61 @@ class AdminController extends AbstractController
     public function editSubscriptionPlan(Request $request, SubscriptionPlanRepository $subscriptionPlanRepository, string $id): Response
     {
         try {
-            // Find the existing plan by numeric ID first
+            // Log the beginning of the edit process
+            error_log("Starting to edit subscription plan with ID: " . $id);
+            error_log("Raw request data: " . json_encode($request->request->all()));
+            
+            // Find the plan using the repository
             $plan = $subscriptionPlanRepository->find($id);
             
-            // If not found by ID, try to find by identifier (string code)
             if (!$plan) {
-                $plan = $subscriptionPlanRepository->findByIdentifier($id);
-            }
-            
-            if (!$plan) {
+                error_log("Plan not found with ID: " . $id);
                 $this->addFlash('error', 'Subscription plan not found.');
                 return $this->redirectToRoute('app_admin_subscriptions');
             }
             
-            // Get form data
+            // Get form values with logging
             $planName = $request->request->get('editPlanName');
-            $planPrice = (float)$request->request->get('editPlanPrice');
-            $planCredits = (int)$request->request->get('editPlanCredits');
+            $planPrice = (float) $request->request->get('editPlanPrice');
+            $planCredits = (int) $request->request->get('editPlanCredits');
             $planDescription = $request->request->get('editPlanDescription');
-            $planTerm = $request->request->get('editPlanTerm');
-            $planDiscount = (int)$request->request->get('editPlanDiscount');
-            $planStripeID = $request->request->get('editPlanStripeID');
-            $planDisplayOrder = (int)$request->request->get('editPlanDisplayOrder', 1);
-            $planIsFeatured = $request->request->has('editPlanIsFeatured');
-            $planIsActive = $request->request->has('editPlanIsActive');
+            $planTerm = $request->request->get('editPlanTerm', 'monthly');
+            $planDiscount = (int) $request->request->get('editPlanDiscount', 0);
+            $planStripeID = $request->request->get('editPlanStripeID', '');
+            $planDisplayOrder = (int) $request->request->get('editPlanDisplayOrder', 1);
             
-            // Get feature flags 
+            // Log incoming data for debugging
+            error_log("Edit request data: " . json_encode([
+                'name' => $planName,
+                'price' => $planPrice,
+                'credits' => $planCredits,
+                'displayOrder' => $planDisplayOrder,
+            ]));
+            
+            // Get boolean parameters - CRITICAL FOR TOGGLE FUNCTIONALITY
+            // Must handle both a regular form submission and toggle switch POST
+            $isActiveParam = $request->request->get('editPlanIsActive');
+            error_log("Raw active param value: " . var_export($isActiveParam, true));
+            
+            // Handle all possible values for isActive
+            $planIsActive = false;
+            if ($isActiveParam === '1' || $isActiveParam === 1 || $isActiveParam === 'on' || $isActiveParam === true || $isActiveParam === 'true') {
+                $planIsActive = true;
+            }
+            
+            $isFeaturedParam = $request->request->get('editPlanIsFeatured'); 
+            error_log("Raw featured param value: " . var_export($isFeaturedParam, true));
+            
+            // Handle all possible values for isFeatured
+            $planIsFeatured = false;
+            if ($isFeaturedParam === '1' || $isFeaturedParam === 1 || $isFeaturedParam === 'on' || $isFeaturedParam === true || $isFeaturedParam === 'true') {
+                $planIsFeatured = true;
+            }
+            
+            error_log("Feature param: " . var_export($isFeaturedParam, true) . " => " . var_export($planIsFeatured, true));
+            error_log("Active param: " . var_export($isActiveParam, true) . " => " . var_export($planIsActive, true));
+            
+            // Get feature flags - handling on/off from toggle switches
             $features = [
                 'product_descriptions' => $request->request->has('editFeatureProductDesc'),
                 'meta_descriptions' => $request->request->has('editFeatureMetaDesc'),
@@ -1426,34 +1495,99 @@ class AdminController extends AbstractController
                 'premium_ai' => $request->request->has('editFeaturePremiumAI')
             ];
             
-            // Update the plan
-            $plan->setName($planName);
-            $plan->setPrice($planPrice);
-            $plan->setCredits($planCredits);
-            $plan->setDescription($planDescription);
-            $plan->setTerm($planTerm ?? 'monthly');
-            $plan->setDiscount($planDiscount ?: null);
-            $plan->setStripeProductId($planStripeID);
-            $plan->setDisplayOrder($planDisplayOrder);
-            $plan->setIsFeatured($planIsFeatured);
-            $plan->setIsActive($planIsActive);
-            $plan->setFeatures($features);
-            $plan->setUpdatedAt(new \DateTimeImmutable());
+            // Begin database transaction
+            $this->entityManager->beginTransaction();
             
-            // Save to database
-            $this->entityManager->persist($plan);
-            $this->entityManager->flush();
+            try {
+                // Record original values for comparison
+                $originalActive = $plan->isActive();
+                
+                // Update the plan with form values
+                if ($planName) $plan->setName($planName);
+                if ($planPrice) $plan->setPrice($planPrice);
+                if ($planCredits) $plan->setCredits($planCredits);
+                if ($planDescription !== null) $plan->setDescription($planDescription);
+                if ($planTerm) $plan->setTerm($planTerm);
+                if ($planDiscount !== null) $plan->setDiscount($planDiscount ?: null);
+                if ($planStripeID) $plan->setStripeProductId($planStripeID);
+                if ($planDisplayOrder) $plan->setDisplayOrder($planDisplayOrder);
+                if ($isFeaturedParam !== null) $plan->setIsFeatured($planIsFeatured);
+                
+                // Always explicitly set active state if it's part of the request
+                if ($isActiveParam !== null) {
+                    $plan->setIsActive($planIsActive);
+                    error_log("Explicitly setting isActive to: " . ($planIsActive ? 'true' : 'false'));
+                }
+                
+                // Only update features if they were included in the request
+                if (count(array_filter($features, function($value) { return $value === true; })) > 0) {
+                    $plan->setFeatures($features);
+                }
+                
+                $plan->setUpdatedAt(new \DateTimeImmutable());
+                
+                // Log the entity state before persisting
+                error_log("Entity state before persist - ID: " . $plan->getId() . 
+                          ", Name: " . $plan->getName() . 
+                          ", DisplayOrder: " . $plan->getDisplayOrder() . 
+                          ", Active: " . ($plan->isActive() ? 'true' : 'false') . 
+                          ", Featured: " . ($plan->isFeatured() ? 'true' : 'false'));
+                
+                // Save to database
+                $this->entityManager->persist($plan);
+                $this->entityManager->flush();
+                
+                // Clear entity manager cache to ensure clean state
+                $this->entityManager->clear();
+                
+                // Commit transaction
+                $this->entityManager->commit();
+                
+                // Verify the changes by reloading the entity
+                $updatedPlan = $subscriptionPlanRepository->find($id);
+                
+                if ($updatedPlan) {
+                    $activeChanged = $originalActive !== $updatedPlan->isActive();
+                    error_log("Plan updated successfully - ID: " . $updatedPlan->getId() . 
+                              ", Name: " . $updatedPlan->getName() . 
+                              ", DisplayOrder: " . $updatedPlan->getDisplayOrder() . 
+                              ", Active: " . ($updatedPlan->isActive() ? 'true' : 'false') . 
+                              ", Featured: " . ($updatedPlan->isFeatured() ? 'true' : 'false') . 
+                              ", Active status changed: " . ($activeChanged ? 'Yes' : 'No'));
+                } else {
+                    error_log("Warning: Could not find plan after update");
+                }
+                
+                // Add success message
+                $this->addFlash('success', 'Subscription plan "' . $planName . '" updated successfully.');
+                
+            } catch (\Exception $transactionException) {
+                // Rollback transaction if an error occurs
+                $this->entityManager->rollback();
+                error_log("Transaction exception: " . $transactionException->getMessage());
+                throw $transactionException;
+            }
             
-            // Add flash message for success
-            $this->addFlash('success', 'Subscription plan "' . $planName . '" updated successfully.');
         } catch (\Exception $e) {
-            // Log the error and show a flash message
+            // Log the error
             error_log('Error updating subscription plan: ' . $e->getMessage());
+            error_log('Error trace: ' . $e->getTraceAsString());
             $this->addFlash('error', 'An error occurred while updating the subscription plan: ' . $e->getMessage());
         }
         
         // Redirect back to subscriptions management page
         return $this->redirectToRoute('app_admin_subscriptions');
+    }
+    
+    /**
+     * Method stub - no longer performs duplicate cleanup to avoid issues
+     */
+    private function cleanupDuplicatePlans(SubscriptionPlan $plan, SubscriptionPlanRepository $repository): void
+    {
+        // This method intentionally does nothing now
+        // We've removed the duplicate detection and deletion logic
+        // to prevent issues with plans being inadvertently removed
+        return;
     }
     
     #[Route('/subscriptions/{id}/delete', name: 'app_admin_delete_subscription_plan', methods: ['POST'])]
@@ -1783,13 +1917,21 @@ class AdminController extends AbstractController
     public function editPackageAddOn(Request $request, int $id): Response
     {
         try {
+            $this->logger->info('Starting package add-on edit', [
+                'id' => $id,
+                'request_data' => $request->request->all()
+            ]);
+            
             // Find the existing add-on package
             $packageAddOn = $this->packageAddOnRepository->find($id);
             
             if (!$packageAddOn) {
+                $this->logger->error('Package add-on not found', ['id' => $id]);
                 $this->addFlash('error', 'Package add-on not found.');
                 return $this->redirectToRoute('app_admin_subscriptions');
             }
+            
+            $this->logger->info('Package add-on found', ['id' => $id, 'name' => $packageAddOn->getName()]);
             
             // Get form data
             $packageName = $request->request->get('editPackageName');
@@ -1802,37 +1944,131 @@ class AdminController extends AbstractController
             $packageStripePriceStandard = $request->request->get('editPackageStripePriceStandard');
             $packageStripePricePremium = $request->request->get('editPackageStripePricePremium');
             $packageDisplayOrder = (int)$request->request->get('editPackageDisplayOrder', 1);
-            $packageIsFeatured = $request->request->has('editPackageIsFeatured');
-            $packageIsActive = $request->request->has('editPackageIsActive');
             
-            // Update the package
-            $packageAddOn->setName($packageName);
-            $packageAddOn->setPriceStandard($packagePriceStandard);
-            $packageAddOn->setPricePremium($packagePricePremium);
-            $packageAddOn->setCredits($packageCredits);
-            $packageAddOn->setDescription($packageDescription);
-            $packageAddOn->setDiscount($packageDiscount ?: null);
-            $packageAddOn->setStripeProductId($packageStripeID);
-            $packageAddOn->setStripePriceIdStandard($packageStripePriceStandard);
-            $packageAddOn->setStripePriceIdPremium($packageStripePricePremium);
-            $packageAddOn->setDisplayOrder($packageDisplayOrder);
-            $packageAddOn->setIsFeatured($packageIsFeatured);
-            $packageAddOn->setIsActive($packageIsActive);
-            $packageAddOn->setUpdatedAt(new \DateTimeImmutable());
+            // Handle boolean parameters - check multiple possible values
+            $packageIsActive = false;
+            if ($request->request->has('editPackageIsActive')) {
+                $editPackageIsActive = $request->request->get('editPackageIsActive');
+                $packageIsActive = $editPackageIsActive === '1' || $editPackageIsActive === 'on' || $editPackageIsActive === 'true' || $editPackageIsActive === true;
+                $this->logger->info('Setting package active status', [
+                    'raw_value' => $editPackageIsActive,
+                    'processed_value' => $packageIsActive
+                ]);
+            }
             
-            // Save to database
-            $this->entityManager->flush();
+            $packageIsFeatured = false;
+            if ($request->request->has('editPackageIsFeatured')) {
+                $editPackageIsFeatured = $request->request->get('editPackageIsFeatured');
+                $packageIsFeatured = $editPackageIsFeatured === '1' || $editPackageIsFeatured === 'on' || $editPackageIsFeatured === 'true' || $editPackageIsFeatured === true;
+                $this->logger->info('Setting package featured status', [
+                    'raw_value' => $editPackageIsFeatured,
+                    'processed_value' => $packageIsFeatured
+                ]);
+            }
             
-            // Add flash message for success
-            $this->addFlash('success', 'Package add-on "' . $packageName . '" updated successfully.');
+            // Begin transaction
+            $this->entityManager->beginTransaction();
+            
+            try {
+                // Update the package
+                if ($packageName) {
+                    $packageAddOn->setName($packageName);
+                }
+                if ($packagePriceStandard) {
+                    $packageAddOn->setPriceStandard($packagePriceStandard);
+                }
+                if ($packagePricePremium) {
+                    $packageAddOn->setPricePremium($packagePricePremium);
+                }
+                if ($packageCredits) {
+                    $packageAddOn->setCredits($packageCredits);
+                }
+                if ($packageDescription !== null) {
+                    $packageAddOn->setDescription($packageDescription);
+                }
+                if ($packageDiscount !== null) {
+                    $packageAddOn->setDiscount($packageDiscount ?: null);
+                }
+                if ($packageStripeID) {
+                    $packageAddOn->setStripeProductId($packageStripeID);
+                }
+                if ($packageStripePriceStandard) {
+                    $packageAddOn->setStripePriceIdStandard($packageStripePriceStandard);
+                }
+                if ($packageStripePricePremium) {
+                    $packageAddOn->setStripePriceIdPremium($packageStripePricePremium);
+                }
+                if ($packageDisplayOrder) {
+                    $packageAddOn->setDisplayOrder($packageDisplayOrder);
+                }
+                
+                // Always set these boolean values if they are included in the request
+                if ($request->request->has('editPackageIsFeatured')) {
+                    $packageAddOn->setIsFeatured($packageIsFeatured);
+                }
+                if ($request->request->has('editPackageIsActive')) {
+                    $packageAddOn->setIsActive($packageIsActive);
+                }
+                
+                $packageAddOn->setUpdatedAt(new \DateTimeImmutable());
+                
+                $this->logger->info('Package add-on before save', [
+                    'id' => $packageAddOn->getId(),
+                    'name' => $packageAddOn->getName(),
+                    'is_active' => $packageAddOn->isActive(),
+                    'is_featured' => $packageAddOn->isFeatured()
+                ]);
+                
+                // Save to database
+                $this->entityManager->flush();
+                $this->entityManager->commit();
+                
+                // Verify the update by reloading
+                $this->entityManager->refresh($packageAddOn);
+                
+                $this->logger->info('Package add-on updated successfully', [
+                    'id' => $packageAddOn->getId(),
+                    'name' => $packageAddOn->getName(),
+                    'is_active' => $packageAddOn->isActive(),
+                    'is_featured' => $packageAddOn->isFeatured()
+                ]);
+                
+                // Add flash message for success
+                $this->addFlash('success', 'Package add-on "' . $packageName . '" updated successfully.');
+                
+                // For AJAX requests, return JSON
+                if ($request->isXmlHttpRequest()) {
+                    return new JsonResponse([
+                        'success' => true,
+                        'message' => 'Package add-on updated successfully',
+                        'status' => $packageAddOn->isActive()
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $this->entityManager->rollback();
+                throw $e;
+            }
         } catch (\Exception $e) {
             // Log the error and show a flash message
-            error_log('Error updating package add-on: ' . $e->getMessage());
+            $this->logger->error('Error updating package add-on', [
+                'id' => $id, 
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             $this->addFlash('error', 'An error occurred while updating the package add-on.');
+            
+            // For AJAX requests, return JSON
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Failed to update package add-on: ' . $e->getMessage()
+                ], 500);
+            }
         }
         
-        // Redirect back to credit packages management page
-        return $this->redirectToRoute('app_admin_credit_packages');
+        // For regular form submission, redirect back to credit packages management page
+        return $this->redirectToRoute('app_admin_subscriptions');
     }
     
     #[Route('/package-addons/{id}/delete', name: 'app_admin_delete_package_addon', methods: ['POST'])]

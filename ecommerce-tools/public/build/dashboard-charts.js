@@ -2,8 +2,40 @@
  * Dashboard Charts - Connects dashboard data to Chart.js visualizations
  */
 
+// Global variables for chart access
+let fullActivityData = [];
+let activityChart = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard charts initializing...');
+    
+    // Add event listener to detect resource load errors
+    window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
+            console.error('Resource load error:', e.target.src || e.target.href);
+        }
+    }, true);
+    
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded. Please check that the script is included correctly.');
+        return;
+    }
+    
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded. Some functionality may be limited.');
+    }
+    
+    // Create empty container for handling notifications if MantisUtils is not defined
+    if (typeof MantisUtils === 'undefined') {
+        console.warn('MantisUtils is not defined. Adding minimal implementation.');
+        window.MantisUtils = {
+            showNotification: function(message, type) {
+                console.log(`[Notification - ${type}]: ${message}`);
+            }
+        };
+    }
     
     // Get the dashboard data from the hidden element
     const dashboardData = document.getElementById('dashboardData');
@@ -64,9 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
         initActivityChartWithSampleData();
         initProductStatusChartWithSampleData();
     }
-    // Move chart variables outside the event handler to make them globally accessible
-    let fullActivityData = [];
-    let activityChart = null;
     
     // Function to set up time range filtering buttons
     function setupTimeRangeFiltering() {
@@ -311,6 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Use the current month and 5 previous months for the sample data
         const today = new Date();
+        const currentYear = today.getFullYear();
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         

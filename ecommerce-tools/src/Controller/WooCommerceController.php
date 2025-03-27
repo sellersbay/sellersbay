@@ -1381,19 +1381,11 @@ class WooCommerceController extends AbstractController
     public function processAIContent(Request $request, WooCommerceProduct $product): JsonResponse
     {
         $user = $this->getTypedUser();
-
-        // Check if user has enough credits
-        if ($user->getCredits() <= 0) {
-            return new JsonResponse([
-                'success' => false,
-                'message' => 'Insufficient credits'
-            ], Response::HTTP_PAYMENT_REQUIRED);
-        }
         
         // Get request data
         $requestData = json_decode($request->getContent(), true) ?? [];
         $usePremiumFeatures = $requestData['usePremiumFeatures'] ?? false;
-        $processingMode = $requestData['processingMode'] ?? 'premium'; // Default to premium processing
+        $processingMode = $requestData['processingMode'] ?? 'standard';
         
         // Check if premium features are requested but user doesn't have premium role
         if ($usePremiumFeatures && !$this->isGranted('ROLE_PREMIUM')) {
@@ -1402,7 +1394,10 @@ class WooCommerceController extends AbstractController
                 'message' => 'Premium subscription required for this feature'
             ], Response::HTTP_FORBIDDEN);
         }
-
+        
+        // Start transaction
+        $this->entityManager->beginTransaction();
+        
         try {
             // Create temporary Product entity for AI service
             $tempProduct = new \App\Entity\Product();
@@ -1428,25 +1423,42 @@ class WooCommerceController extends AbstractController
             }
             
             // Set isPremiumProcessing flag based on selected processing mode
-            // This determines which AI model is used (GPT-4 Turbo vs GPT-3.5 Turbo)
             $aiOptions['isPremiumProcessing'] = ($processingMode === 'premium');
             
             // Generate content using OpenAI with the appropriate options
             $content = $this->aiService->generateContent($tempProduct, $aiOptions);
 
             // Determine credit cost based on processing mode
-            $creditCost = ($processingMode === 'premium') ? 1.0 : 0.5; // 1 credit for premium, 0.5 for standard
+            $creditCost = ($processingMode === 'premium') ? 1.0 : 0.5;
+            
+            // Check if user has enough credits
+            if ($user->getCredits() < $creditCost) {
+                throw new \Exception('Insufficient credits');
+            }
             
             // Deduct credits
             $user->setCredits($user->getCredits() - $creditCost);
             
+            // Commit transaction
             $this->entityManager->flush();
+            $this->entityManager->commit();
 
             return new JsonResponse([
                 'success' => true,
                 'content' => $content
             ]);
         } catch (\Exception $e) {
+            // Rollback transaction on error
+            $this->entityManager->rollback();
+            
+            // Log the error
+            error_log(sprintf(
+                'AI Processing Error - Product ID: %d, User ID: %d, Error: %s',
+                $product->getId(),
+                $user->getId(),
+                $e->getMessage()
+            ));
+            
             return new JsonResponse([
                 'success' => false,
                 'message' => 'Failed to generate content: ' . $e->getMessage()
@@ -1981,13 +1993,12 @@ class WooCommerceController extends AbstractController
     {
         // Increase execution time limit for batch processing
         $originalTimeLimit = ini_get('max_execution_time');
-        set_time_limit(300); // 5 minutes instead of default 120 seconds
+        set_time_limit(300); // 5 minutes
         
         $productIds = $request->request->all()['product_ids'] ?? [];
         
         if (empty($productIds)) {
             $this->addFlash('error', 'No products selected for processing.');
-            // Restore original time limit
             set_time_limit($originalTimeLimit);
             return $this->redirectToRoute('app_woocommerce_dashboard');
         }
@@ -1995,7 +2006,7 @@ class WooCommerceController extends AbstractController
         $user = $this->getTypedUser();
         $processedCount = 0;
         $failedCount = 0;
-        $batchSize = 3; // Process 3 products at a time to avoid timeout
+        $batchSize = 3; // Process 3 products at a time
         
         // Process products in batches
         $totalBatches = ceil(count($productIds) / $batchSize);
@@ -2004,57 +2015,46 @@ class WooCommerceController extends AbstractController
             $batchStart = $batchNum * $batchSize;
             $batchIds = array_slice($productIds, $batchStart, $batchSize);
             
-            // Process this batch
-            foreach ($batchIds as $productId) {
-                try {
-                    $product = $this->wooCommerceProductRepository->find($productId);
-                    
-                    if (!$product) {
-                        continue;
-                    }
-                    
-                    // Security check - ensure product belongs to user
-                    if ($product->getOwner() !== $user) {
-                        continue;
-                    }
-                    
-                    // Check if user has enough credits
-                    if ($user->getCredits() <= 0) {
-                        $this->addFlash('error', 'You have run out of credits. Please purchase more to continue processing.');
-                        // Restore original time limit
-                        set_time_limit($originalTimeLimit);
-                        return $this->redirectToRoute('app_woocommerce_dashboard');
-                    }
-                    
-                    // Create temporary Product entity for AI service
-                    $tempProduct = new \App\Entity\Product();
-                    $tempProduct->setName($product->getName());
-                    $tempProduct->setDescription($product->getDescription());
-                    $tempProduct->setShortDescription($product->getShortDescription());
-                    if ($product->getImageUrl()) {
-                        $tempProduct->setImageUrl($product->getImageUrl());
-                    }
-                    $tempProduct->setOwner($product->getOwner());
-                    
-                    $aiGenOptions = []; // Default options for non-premium users
-                    
+            // Start transaction for this batch
+            $this->entityManager->beginTransaction();
+            
+            try {
+                foreach ($batchIds as $productId) {
                     try {
-                        // Generate AI content using AIService with temporary Product
-                        $generatedContent = $this->aiService->generateContent($tempProduct, $aiGenOptions);
+                        $product = $this->wooCommerceProductRepository->find($productId);
                         
-                        // Apply the generated content to the product
+                        if (!$product || $product->getOwner() !== $user) {
+                            continue;
+                        }
+                        
+                        // Check if user has enough credits
+                        if ($user->getCredits() <= 0) {
+                            throw new \Exception('Insufficient credits');
+                        }
+                        
+                        // Create temporary Product entity for AI service
+                        $tempProduct = new \App\Entity\Product();
+                        $tempProduct->setName($product->getName());
+                        $tempProduct->setDescription($product->getDescription());
+                        $tempProduct->setShortDescription($product->getShortDescription());
+                        if ($product->getImageUrl()) {
+                            $tempProduct->setImageUrl($product->getImageUrl());
+                        }
+                        $tempProduct->setOwner($product->getOwner());
+                        
+                        // Generate AI content
+                        $generatedContent = $this->aiService->generateContent($tempProduct);
+                        
+                        // Apply the generated content
                         if (!empty($generatedContent['description'])) {
                             $product->setDescription($generatedContent['description']);
                         }
-                        
                         if (!empty($generatedContent['shortDescription'])) {
                             $product->setShortDescription($generatedContent['shortDescription']);
                         }
-                        
                         if (!empty($generatedContent['metaDescription'])) {
                             $product->setMetaDescription($generatedContent['metaDescription']);
                         }
-                        
                         if (!empty($generatedContent['imageAltText'])) {
                             $product->setImageAltText($generatedContent['imageAltText']);
                         }
@@ -2062,24 +2062,40 @@ class WooCommerceController extends AbstractController
                         // Update product status
                         $product->setStatus('ai_processed');
                         
-                        // Deduct credits - 1 credit per product
+                        // Deduct credits
                         $user->setCredits($user->getCredits() - 1);
                         
-                        // Save after each product to avoid losing progress if a later one fails
-                        $this->entityManager->flush();
                         $processedCount++;
                     } catch (\Exception $e) {
                         $failedCount++;
+                        error_log(sprintf(
+                            'Batch Processing Error - Product ID: %d, User ID: %d, Error: %s',
+                            $productId,
+                            $user->getId(),
+                            $e->getMessage()
+                        ));
                     }
-                } catch (\Exception $e) {
-                    $failedCount++;
                 }
+                
+                // Commit transaction for this batch
+                $this->entityManager->flush();
+                $this->entityManager->commit();
+                
+                // Short pause between batches
+                if ($batchNum < $totalBatches - 1) {
+                    sleep(1);
+                }
+            } catch (\Exception $e) {
+                // Rollback transaction for this batch
+                $this->entityManager->rollback();
+                error_log(sprintf(
+                    'Batch Transaction Error - Batch: %d, User ID: %d, Error: %s',
+                    $batchNum,
+                    $user->getId(),
+                    $e->getMessage()
+                ));
             }
-            
-            // Short pause between batches to give the server a break
-            if ($batchNum < $totalBatches - 1) {
-                sleep(1);
-            }
+
         }
         
         // Restore original time limit

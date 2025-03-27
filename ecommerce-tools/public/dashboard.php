@@ -52,47 +52,135 @@ $recent_activity = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="http://localhost/sellersbay/ecommerce-tools/public/" />
     <title>RoboSEO Dashboard - Mantis Bootstrap</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Dashboard CSS -->
+    <link href="assets/styles/dashboard.css?t=<?= time() ?>" rel="stylesheet">
+    
     <!-- Mantis Bootstrap CSS -->
-    <link href="/assets/mantis/css/mantis-bootstrap.css" rel="stylesheet">
+    <link href="assets/mantis/css/mantis-bootstrap.css?t=<?= time() ?>" rel="stylesheet">
+    <link href="assets/mantis/css/notifications.css?t=<?= time() ?>" rel="stylesheet">
+    
+    <!-- Custom navbar fixes -->
+    <style>
+    /* Simple reset for the navbar */
+    .navbar {
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0;
+    }
+    @media (min-width: 992px) {
+        .navbar-nav .nav-link {
+            padding: 0.5rem 1rem;
+        }
+    }
+    </style>
     
     <!-- Chart.js for dashboard charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1/dist/chart.umd.min.js" integrity="sha384-LZ9+fR8NE1iR9u2mPCo8o46haoV86DEe3Kk0zQmKUXzA9Yz5j9ZbI6QrKn1ULlta" crossorigin="anonymous"></script>
+    
+    <!-- Debug script to detect 404 errors -->
+    <script>
+    (function() {
+        console.log('Dashboard debug script loaded');
+        
+        // Monitor resource loading errors
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
+                console.error('Resource failed to load:', e.target.src || e.target.href);
+            }
+        }, true);
+        
+        // Fallback for Chart.js
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js failed to load from CDN. Loading local fallback.');
+                var fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+                document.head.appendChild(fallbackScript);
+            }
+        });
+    })();
+    </script>
 </head>
 <body class="mantis-app-container">
+    <!-- Hidden element for dashboard data -->
+    <div id="dashboardData" 
+         data-monthly-activity='<?php echo json_encode([
+             ["month" => "Jan", "count" => 34],
+             ["month" => "Feb", "count" => 42],
+             ["month" => "Mar", "count" => 51],
+             ["month" => "Apr", "count" => 48],
+             ["month" => "May", "count" => 63],
+             ["month" => "Jun", "count" => 58]
+         ]); ?>'
+         data-product-status='<?php echo json_encode([
+             ["status" => "Published", "count" => 65],
+             ["status" => "Draft", "count" => 42],
+             ["status" => "Pending Review", "count" => 28],
+             ["status" => "Scheduled", "count" => 15]
+         ]); ?>'
+         data-content-stats='<?php echo json_encode([
+             "full_descriptions" => 65,
+             "short_descriptions" => 42,
+             "meta_descriptions" => 78,
+             "image_alts" => 37
+         ]); ?>'
+    ></div>
     
     <!-- Header Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
         <div class="container">
-            <a class="navbar-brand" href="#">RoboSEO</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <a class="navbar-brand" href="#">
+                <img src="/sellersbay/ecommerce-tools/assets/images/sellersbay-logo.png" alt="Seller's Bay" height="40">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ml-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="dashboard.php">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="connect.php">Connect</a></li>
-                    <li class="nav-item"><a class="nav-link" href="account.php">Account</a></li>
-                    <li class="nav-item"><a class="nav-link" href="support.php">Support</a></li>
-                </ul>
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-user-circle me-1"></i> <?= htmlspecialchars($username) ?>
-                        </a>
+                        <a class="nav-link" href="index.php">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-coins me-1"></i> <?= $available_credits ?> Credits
-                        </a>
+                        <a class="nav-link fw-bold" href="dashboard.php">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="connect.php">Connect</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="account.php">Account</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="support.php">Support</a>
                     </li>
                 </ul>
+                <div class="d-flex">
+                    <a href="buy-credits.php" class="btn btn-primary me-2 d-none d-lg-inline-block">
+                        <i class="fas fa-coins"></i> Buy Credits
+                    </a>
+                    <div class="me-3 d-none d-lg-block">
+                        <i class="fas fa-coins text-warning"></i> <?= $available_credits ?> Credits
+                    </div>
+                    <div class="dropdown d-none d-lg-block">
+                        <button class="btn dropdown-toggle p-0 border-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle"></i> <?= htmlspecialchars($username) ?>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="profile.php">Profile</a></li>
+                            <li><a class="dropdown-item" href="settings.php">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="logout.php">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -254,33 +342,59 @@ $recent_activity = [
             
             <!-- Dashboard Analytics Section -->
             <div class="row mt-4">
-                <div class="col-lg-8">
-                    <div class="mantis-card">
+                <div class="col-md-6">
+                    <div class="mantis-card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mantis-card-title">Monthly Performance</h6>
+                            <h5 class="m-0">Monthly Activity</h5>
+                            <div class="d-flex gap-2">
+                                <div class="dropdown me-2">
+                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-calendar me-1"></i> Last 6 Months
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="timeRangeDropdown">
+                                        <li><a class="dropdown-item" href="#" data-time-range="30">Last 30 Days</a></li>
+                                        <li><a class="dropdown-item" href="#" data-time-range="90">Last 90 Days</a></li>
+                                        <li><a class="dropdown-item" href="#" data-time-range="180">Last 180 Days</a></li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="aiActivityOptions" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="aiActivityOptions">
+                                        <li><a class="dropdown-item" href="#">Export as PDF</a></li>
+                                        <li><a class="dropdown-item" href="#">Export as CSV</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Monthly Activity Chart -->
+                            <div class="dashboard-chart-container">
+                                <canvas id="aiActivityChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mantis-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="m-0">Content Breakdown</h5>
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-calendar me-1"></i> Last 6 Months
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="contentBreakdownOptions" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </button>
-                                <ul class="dropdown-menu" aria-labelledby="timeRangeDropdown">
-                                    <li><a class="dropdown-item" href="#" data-time-range="30">Last 30 Days</a></li>
-                                    <li><a class="dropdown-item" href="#" data-time-range="90">Last 3 Months</a></li>
-                                    <li><a class="dropdown-item" href="#" data-time-range="180">Last 6 Months</a></li>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="contentBreakdownOptions">
+                                    <li><a class="dropdown-item" href="#">Export as PDF</a></li>
+                                    <li><a class="dropdown-item" href="#">Export as CSV</a></li>
                                 </ul>
                             </div>
                         </div>
                         <div class="card-body">
-                            <canvas id="performanceChart" height="300"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="mantis-card">
-                        <div class="card-header">
-                            <h6 class="mantis-card-title">Content Breakdown</h6>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="contentBreakdownChart" height="300"></canvas>
+                            <!-- Content Breakdown Chart -->
+                            <div class="dashboard-chart-container">
+                                <canvas id="productStatusChart" height="300"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -355,82 +469,21 @@ $recent_activity = [
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Mantis Bootstrap JS -->
-    <script src="/assets/mantis/js/mantis-bootstrap.js"></script>
+    <script src="assets/mantis/js/mantis-bootstrap.js?t=<?= time() ?>"></script>
     
-    <!-- Dashboard Charts Initialization -->
+    <!-- Dashboard Charts JS -->
+    <script src="build/dashboard-charts.js?t=<?= time() ?>"></script>
+    
+    <!-- Other Dashboard Interactions -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Performance Chart
-            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-            const performanceChart = new Chart(performanceCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Products Processed',
-                        data: [35, 42, 67, 89, 112, 134],
-                        borderColor: '#2196f3',
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }, {
-                        label: 'Products Exported',
-                        data: [28, 35, 52, 64, 87, 103],
-                        borderColor: '#4caf50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-            
-            // Content Breakdown Chart
-            const breakdownCtx = document.getElementById('contentBreakdownChart').getContext('2d');
-            const breakdownChart = new Chart(breakdownCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Full Descriptions', 'Short Descriptions', 'Meta Descriptions', 'Image Alt Texts'],
-                    datasets: [{
-                        data: [65, 42, 78, 37],
-                        backgroundColor: [
-                            '#2196f3',
-                            '#4caf50',
-                            '#03a9f4',
-                            '#ff9800'
-                        ],
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                        }
-                    }
-                }
-            });
-            
             // Handle Refresh Activity Button
-            document.getElementById('reloadActivity').addEventListener('click', function() {
+            document.getElementById('reloadActivity')?.addEventListener('click', function() {
                 // In a real app, this would fetch from the server
                 // For demo, we'll just show a loading indicator
                 const activityTable = document.getElementById('activity_log');
+                if (!activityTable) return;
+                
                 activityTable.innerHTML = `
                     <tr>
                         <td colspan="3" class="text-center">
@@ -465,13 +518,17 @@ $recent_activity = [
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     const range = this.getAttribute('data-time-range');
-                    document.getElementById('timeRangeDropdown').innerHTML = `
+                    const timeRangeDropdown = document.getElementById('timeRangeDropdown');
+                    if (!timeRangeDropdown) return;
+                    
+                    timeRangeDropdown.innerHTML = `
                         <i class="fas fa-calendar me-1"></i> Last ${range} Days
                     `;
                     
                     // In a real app, this would update the chart data
-                    // For demo, we'll just show a loading indicator and simulated data change
-                    MantisUtils.showNotification('Time range updated to last ' + range + ' days', 'info');
+                    if (typeof MantisUtils !== 'undefined') {
+                        MantisUtils.showNotification('Time range updated to last ' + range + ' days', 'info');
+                    }
                 });
             });
         });

@@ -41,69 +41,91 @@ class TransactionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get revenue data by month for the last X months
+     * Get revenue data by month for the last X months - OPTIMIZED VERSION
      *
      * @param int $numberOfMonths Number of months to include
      * @return array Array of revenue data by month
      */
     public function getRevenueByMonth(int $numberOfMonths = 12): array
     {
-        $now = new \DateTime();
-        $results = [];
+        // Calculate date range
+        $endDate = new \DateTime();
+        $startDate = clone $endDate;
+        $startDate->modify('-' . ($numberOfMonths - 1) . ' months');
+        $startDate->modify('first day of this month');
+        $startDate->setTime(0, 0, 0);
         
-        // Get months in reverse (newest to oldest)
+        // Get all monthly revenue in a single query
+        $query = $this->createQueryBuilder('t')
+            ->select("DATE_FORMAT(t.createdAt, '%Y-%m') as yearMonth")
+            ->addSelect("DATE_FORMAT(t.createdAt, '%b') as month")
+            ->addSelect('SUM(t.amount) as amount')
+            ->where('t.createdAt >= :startDate')
+            ->andWhere('t.createdAt <= :endDate')
+            ->andWhere('t.type IN (:types)')
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->setParameter('types', [
+                Transaction::TYPE_CREDIT_PURCHASE, 
+                Transaction::TYPE_SUBSCRIPTION_PAYMENT
+            ])
+            ->groupBy('yearMonth')
+            ->orderBy('yearMonth', 'ASC')
+            ->getQuery();
+        
+        $results = $query->getResult();
+        
+        // Create an array of all months in the range (including those with zero revenue)
+        $formattedResults = [];
+        $currentDate = clone $startDate;
+        
         for ($i = 0; $i < $numberOfMonths; $i++) {
-            $endDate = clone $now;
-            $endDate->modify('-' . $i . ' month');
-            $endDate->modify('last day of this month');
-            $endDate->setTime(23, 59, 59);
+            $yearMonth = $currentDate->format('Y-m');
+            $monthName = $currentDate->format('M');
             
-            $startDate = clone $endDate;
-            $startDate->modify('first day of this month');
-            $startDate->setTime(0, 0, 0);
+            // Default to zero revenue
+            $monthAmount = 0;
             
-            // Get revenue from transactions
-            $revenueAmount = $this->createQueryBuilder('t')
-                ->select('SUM(t.amount)')
-                ->where('t.createdAt >= :startDate')
-                ->andWhere('t.createdAt <= :endDate')
-                ->andWhere('t.type IN (:types)')
-                ->setParameter('startDate', $startDate)
-                ->setParameter('endDate', $endDate)
-                ->setParameter('types', [
-                    Transaction::TYPE_CREDIT_PURCHASE, 
-                    Transaction::TYPE_SUBSCRIPTION_PAYMENT
-                ])
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0;
+            // Try to find actual revenue for this month
+            foreach ($results as $result) {
+                if ($result['yearMonth'] === $yearMonth) {
+                    $monthAmount = (float) $result['amount'];
+                    break;
+                }
+            }
             
-            $monthName = $endDate->format('M');
-            
-            // Store results with newest month last
-            $results[$numberOfMonths - 1 - $i] = [
+            $formattedResults[$i] = [
                 'month' => $monthName,
-                'amount' => (float)$revenueAmount
+                'amount' => $monthAmount
             ];
+            
+            // Move to next month
+            $currentDate->modify('+1 month');
         }
         
-        return $results;
+        return $formattedResults;
     }
     
     /**
-     * Get revenue breakdown by type
+     * Get revenue breakdown by type - OPTIMIZED VERSION
      *
      * @return array Revenue breakdown percentages
      */
     public function getRevenueBreakdown(): array
     {
-        // Calculate total revenue
-        $totalRevenue = $this->createQueryBuilder('t')
-            ->select('SUM(t.amount)')
+        // Get all revenue data in a single query with CASE expressions
+        $result = $this->createQueryBuilder('t')
+            ->select('SUM(t.amount) as total_revenue')
+            ->addSelect('SUM(CASE WHEN t.type = :credit_type THEN t.amount ELSE 0 END) as credit_purchase_revenue')
+            ->addSelect('SUM(CASE WHEN t.type = :subscription_type THEN t.amount ELSE 0 END) as subscription_revenue')
             ->where('t.amount > 0')
+            ->setParameter('credit_type', Transaction::TYPE_CREDIT_PURCHASE)
+            ->setParameter('subscription_type', Transaction::TYPE_SUBSCRIPTION_PAYMENT)
             ->getQuery()
-            ->getSingleScalarResult() ?? 0;
+            ->getOneOrNullResult();
         
         // Early return to avoid division by zero
+        $totalRevenue = (float)($result['total_revenue'] ?? 0);
         if ($totalRevenue == 0) {
             return [
                 'credit_purchase' => 0,
@@ -112,23 +134,10 @@ class TransactionRepository extends ServiceEntityRepository
             ];
         }
         
-        // Get revenue from credit purchases
-        $creditPurchaseRevenue = $this->createQueryBuilder('t')
-            ->select('SUM(t.amount)')
-            ->where('t.type = :type')
-            ->setParameter('type', Transaction::TYPE_CREDIT_PURCHASE)
-            ->getQuery()
-            ->getSingleScalarResult() ?? 0;
-        
-        // Get revenue from subscriptions
-        $subscriptionRevenue = $this->createQueryBuilder('t')
-            ->select('SUM(t.amount)')
-            ->where('t.type = :type')
-            ->setParameter('type', Transaction::TYPE_SUBSCRIPTION_PAYMENT)
-            ->getQuery()
-            ->getSingleScalarResult() ?? 0;
-        
         // Calculate percentages
+        $creditPurchaseRevenue = (float)($result['credit_purchase_revenue'] ?? 0);
+        $subscriptionRevenue = (float)($result['subscription_revenue'] ?? 0);
+        
         $creditPurchasePercentage = round(($creditPurchaseRevenue / $totalRevenue) * 100);
         $subscriptionPercentage = round(($subscriptionRevenue / $totalRevenue) * 100);
         $otherPercentage = 100 - $creditPurchasePercentage - $subscriptionPercentage;
@@ -141,49 +150,66 @@ class TransactionRepository extends ServiceEntityRepository
     }
     
     /**
-     * Get monthly credit usage data
+     * Get monthly credit usage data - OPTIMIZED VERSION
      *
      * @param int $numberOfMonths Number of months to include
      * @return array Array of credit usage data by month
      */
     public function getCreditUsageByMonth(int $numberOfMonths = 12): array
     {
-        $now = new \DateTime();
-        $results = [];
+        // Calculate date range
+        $endDate = new \DateTime();
+        $startDate = clone $endDate;
+        $startDate->modify('-' . ($numberOfMonths - 1) . ' months');
+        $startDate->modify('first day of this month');
+        $startDate->setTime(0, 0, 0);
         
-        // Get months in reverse (newest to oldest)
+        // Get all monthly credit usage in a single query
+        $query = $this->createQueryBuilder('t')
+            ->select("DATE_FORMAT(t.createdAt, '%Y-%m') as yearMonth")
+            ->addSelect("DATE_FORMAT(t.createdAt, '%b') as month")
+            ->addSelect('SUM(t.credits) as used_credits')
+            ->where('t.createdAt >= :startDate')
+            ->andWhere('t.createdAt <= :endDate')
+            ->andWhere('t.type = :type')
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->setParameter('type', Transaction::TYPE_CREDIT_USAGE)
+            ->groupBy('yearMonth')
+            ->orderBy('yearMonth', 'ASC')
+            ->getQuery();
+        
+        $results = $query->getResult();
+        
+        // Create an array of all months in the range (including those with zero usage)
+        $formattedResults = [];
+        $currentDate = clone $startDate;
+        
         for ($i = 0; $i < $numberOfMonths; $i++) {
-            $endDate = clone $now;
-            $endDate->modify('-' . $i . ' month');
-            $endDate->modify('last day of this month');
-            $endDate->setTime(23, 59, 59);
+            $yearMonth = $currentDate->format('Y-m');
+            $monthName = $currentDate->format('M');
             
-            $startDate = clone $endDate;
-            $startDate->modify('first day of this month');
-            $startDate->setTime(0, 0, 0);
+            // Default to zero usage
+            $monthUsage = 0;
             
-            // Get credit usage
-            $usedCredits = $this->createQueryBuilder('t')
-                ->select('SUM(t.credits)')
-                ->where('t.createdAt >= :startDate')
-                ->andWhere('t.createdAt <= :endDate')
-                ->andWhere('t.type = :type')
-                ->setParameter('startDate', $startDate)
-                ->setParameter('endDate', $endDate)
-                ->setParameter('type', Transaction::TYPE_CREDIT_USAGE)
-                ->getQuery()
-                ->getSingleScalarResult() ?? 0;
+            // Try to find actual usage for this month
+            foreach ($results as $result) {
+                if ($result['yearMonth'] === $yearMonth) {
+                    $monthUsage = (int) $result['used_credits'];
+                    break;
+                }
+            }
             
-            $monthName = $endDate->format('M');
-            
-            // Store results with newest month last
-            $results[$numberOfMonths - 1 - $i] = [
+            $formattedResults[$i] = [
                 'month' => $monthName,
-                'used' => (int)$usedCredits
+                'used' => $monthUsage
             ];
+            
+            // Move to next month
+            $currentDate->modify('+1 month');
         }
         
-        return $results;
+        return $formattedResults;
     }
     
     /**

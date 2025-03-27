@@ -31,9 +31,19 @@
                 display: flex !important;
             }
             
-            /* Ensure correct display for navbar content */
-            .navbar-collapse {
-                display: flex !important;
+            /* Fix navbar collapse behavior - allow it to properly collapse on mobile */
+            @media (max-width: 991.98px) {
+                .navbar-collapse {
+                    display: none !important;
+                }
+                .navbar-collapse.show {
+                    display: flex !important;
+                }
+            }
+            @media (min-width: 992px) {
+                .navbar-collapse {
+                    display: flex !important;
+                }
             }
         </style>
     {% endblock %}

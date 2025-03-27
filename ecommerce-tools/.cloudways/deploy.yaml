@@ -1,0 +1,50 @@
+# Cloudways deployment configuration
+version: 1.0
+
+# Application settings
+app:
+  name: sellersbay
+  type: symfony
+  php_version: 8.2
+  web_server: nginx
+  database: mysql
+  database_version: 8.0
+
+# Deployment settings
+deploy:
+  strategy: git
+  branch: main
+  composer: true
+  composer_options: --no-dev --optimize-autoloader
+  symfony:
+    env: prod
+    clear_cache: true
+    warmup_cache: true
+    optimize: true
+
+# Environment variables
+env:
+  - APP_ENV=prod
+  - APP_DEBUG=0
+  - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?serverVersion=8.0.32&charset=utf8mb4&pool_size=20&pool_reset=1&pool_validate=1
+
+# Build steps
+build:
+  - composer install --no-dev --optimize-autoloader
+  - php bin/console cache:clear --env=prod
+  - php bin/console cache:warmup --env=prod
+  - php bin/console doctrine:schema:update --force --env=prod
+  - php bin/console assets:install --env=prod
+
+# Post-deployment steps
+post_deploy:
+  - php bin/console doctrine:schema:update --force --env=prod
+  - php bin/console cache:clear --env=prod
+  - php bin/console cache:warmup --env=prod
+
+# Health checks
+health_check:
+  - url: /health
+    timeout: 5
+    interval: 30
+    retries: 3 
